@@ -2,60 +2,66 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Loja Online</title>
+<title>Controle de Produtos</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-body { font-family: Arial; margin: 0; display: flex; }
-#main { flex: 1; padding: 20px; }
-#cart {
-  width: 300px;
-  background: #f7f7f7;
-  padding: 15px;
-  border-left: 1px solid #ccc;
+body { font-family: Arial; padding: 20px; }
+h2 { margin-bottom: 10px; }
+
+.controls { margin-bottom: 10px; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 10px;
 }
-.card {
+
+th, td {
   border: 1px solid #ccc;
-  padding: 10px;
-  margin: 10px;
-  border-radius: 10px;
-  width: 200px;
+  padding: 8px;
+  text-align: left;
 }
-.grid {
-  display: flex;
-  flex-wrap: wrap;
+
+th { background: #f2f2f2; }
+
+input, select {
+  padding: 6px;
+  margin: 5px;
 }
-button { padding: 5px 10px; margin-top: 5px; }
-input, select { margin: 5px; padding: 5px; }
+
+.selected {
+  background-color: #dff0d8;
+}
 </style>
 </head>
 
 <body>
 
-<div id="main">
-  <h2>Produtos</h2>
+<h2>Produtos</h2>
 
+<div class="controls">
   <input type="text" id="search" placeholder="Buscar..." onkeyup="applyFilters()">
-  <input type="number" id="minPrice" placeholder="Preço mínimo" oninput="applyFilters()">
-  <input type="number" id="maxPrice" placeholder="Preço máximo" oninput="applyFilters()">
-
-  <div id="filters"></div>
-  <div class="grid" id="productGrid"></div>
+  <input type="number" id="minPrice" placeholder="Preço mín" oninput="applyFilters()">
+  <input type="number" id="maxPrice" placeholder="Preço máx" oninput="applyFilters()">
+  <button onclick="sendWhatsApp()">Enviar Pedido</button>
 </div>
 
-<div id="cart">
-  <h3>Carrinho</h3>
-  <ul id="cartItems"></ul>
-  <p><b>Total: R$ <span id="total">0</span></b></p>
-  <button onclick="sendWhatsApp()">Finalizar no WhatsApp</button>
-</div>
+<div id="filters"></div>
+
+<table id="dataTable">
+  <thead></thead>
+  <tbody></tbody>
+</table>
+
+<p><b>Total selecionado: R$ <span id="total">0</span></b></p>
 
 <script>
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQKdjpPXyQqrnfi3jnNYfeeWh-ARt-1aPxIdL4cm_uwwosoi-ImgURlTcweWAJpJKvJkmQpDXD-xbTc/pub?gid=1717273730&single=true&output=csv";
 
 let data = [];
-let filteredData = [];
-let cart = [];
+let headers = [];
+let selected = [];
 
 function loadCSV() {
   Papa.parse(CSV_URL, {
@@ -64,18 +70,16 @@ function loadCSV() {
     skipEmptyLines: true,
     complete: res => {
       data = res.data;
-      filteredData = data;
+      headers = Object.keys(data[0]);
       createFilters();
-      renderProducts();
+      renderTable(data);
     }
   });
 }
 
 function createFilters() {
   const container = document.getElementById('filters');
-  container.innerHTML = "";
-
-  const headers = Object.keys(data[0]);
+  container.innerHTML = "<h3>Filtros</h3>";
 
   headers.forEach(header => {
     if (header.toLowerCase().includes("preço")) return;
@@ -98,7 +102,7 @@ function applyFilters() {
   const min = parseFloat(document.getElementById('minPrice').value) || 0;
   const max = parseFloat(document.getElementById('maxPrice').value) || Infinity;
 
-  filteredData = data.filter(row => {
+  let filtered = data.filter(row => {
     const price = parseFloat(row["preço"] || row["Preco"] || 0);
 
     if (price < min || price > max) return false;
@@ -118,47 +122,65 @@ function applyFilters() {
     return valid;
   });
 
-  renderProducts();
+  renderTable(filtered);
 }
 
-function renderProducts() {
-  const grid = document.getElementById('productGrid');
-  grid.innerHTML = "";
+function renderTable(rows) {
+  const thead = document.querySelector('#dataTable thead');
+  const tbody = document.querySelector('#dataTable tbody');
 
-  filteredData.forEach(item => {
-    const price = item["preço"] || item["Preco"] || "0";
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
 
-    const div = document.createElement('div');
-    div.className = "card";
+  const trHead = document.createElement('tr');
 
-    div.innerHTML = `
-      <b>${item["produto"] || item["Produto"] || "Produto"}</b><br>
-      R$ ${price}<br>
-      <button onclick='addToCart(${JSON.stringify(item)})'>Adicionar</button>
-    `;
+  trHead.innerHTML = "<th>✔</th>" + headers.map(h => `<th>${h}</th>`).join('');
+  thead.appendChild(trHead);
 
-    grid.appendChild(div);
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+
+    const isChecked = selected.includes(row);
+
+    tr.className = isChecked ? "selected" : "";
+
+    const checkbox = document.createElement('input');
+    checkbox.type = "checkbox";
+    checkbox.checked = isChecked;
+
+    checkbox.onchange = () => toggleSelection(row);
+
+    const tdCheck = document.createElement('td');
+    tdCheck.appendChild(checkbox);
+    tr.appendChild(tdCheck);
+
+    headers.forEach(h => {
+      const td = document.createElement('td');
+      td.textContent = row[h];
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
   });
+
+  updateTotal();
 }
 
-function addToCart(item) {
-  cart.push(item);
-  updateCart();
+function toggleSelection(row) {
+  if (selected.includes(row)) {
+    selected = selected.filter(r => r !== row);
+  } else {
+    selected.push(row);
+  }
+
+  renderTable(data);
 }
 
-function updateCart() {
-  const ul = document.getElementById('cartItems');
-  ul.innerHTML = "";
-
+function updateTotal() {
   let total = 0;
 
-  cart.forEach(item => {
-    const price = parseFloat(item["preço"] || item["Preco"] || 0);
-    total += price;
-
-    const li = document.createElement('li');
-    li.textContent = `${item["produto"] || "Produto"} - R$ ${price}`;
-    ul.appendChild(li);
+  selected.forEach(item => {
+    total += parseFloat(item["preço"] || item["Preco"] || 0);
   });
 
   document.getElementById('total').textContent = total.toFixed(2);
@@ -167,13 +189,13 @@ function updateCart() {
 function sendWhatsApp() {
   let message = "Pedido:%0A";
 
-  cart.forEach(item => {
-    message += `- ${item["produto"]} (R$ ${item["preço"]})%0A`;
+  selected.forEach(item => {
+    message += `- ${item["produto"] || "Produto"} (R$ ${item["preço"]})%0A`;
   });
 
   message += `%0ATotal: R$ ${document.getElementById('total').textContent}`;
 
-  const phone = "5599999999999"; // <-- COLOQUE SEU NÚMERO
+  const phone = "5599999999999";
   window.open(`https://wa.me/${phone}?text=${message}`);
 }
 
