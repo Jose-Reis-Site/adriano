@@ -2,25 +2,23 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Leitor de CSV com Filtros</title>
+  <title>Dashboard de Produtos</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
   <style>
     body { font-family: Arial; padding: 20px; }
+    h2 { margin-bottom: 10px; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f4f4f4; }
-    input, select { margin: 5px; padding: 5px; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background: #f0f0f0; }
+    select, input { margin: 5px; padding: 6px; }
   </style>
 </head>
 <body>
 
-<h2>Leitor de CSV</h2>
+<h2>Produtos</h2>
 
-<input type="file" id="fileInput" accept=".csv">
-<br>
-<textarea id="csvText" rows="5" cols="80" placeholder="Ou cole o CSV aqui..."></textarea>
-<br>
-<button onclick="processCSV()">Carregar Dados</button>
+<input type="text" id="search" placeholder="Buscar..." onkeyup="applyFilters()">
 
 <div id="filters"></div>
 
@@ -30,33 +28,23 @@
 </table>
 
 <script>
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQKdjpPXyQqrnfi3jnNYfeeWh-ARt-1aPxIdL4cm_uwwosoi-ImgURlTcweWAJpJKvJkmQpDXD-xbTc/pub?gid=1717273730&single=true&output=csv";
+
 let originalData = [];
 let headers = [];
 
-function processCSV() {
-  const file = document.getElementById('fileInput').files[0];
-  const text = document.getElementById('csvText').value;
-
-  if (file) {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        loadTable(results.data);
-      }
-    });
-  } else if (text) {
-    const results = Papa.parse(text, { header: true, skipEmptyLines: true });
-    loadTable(results.data);
-  }
-}
-
-function loadTable(data) {
-  originalData = data;
-  headers = Object.keys(data[0]);
-
-  createFilters();
-  renderTable(data);
+function loadCSV() {
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      originalData = results.data;
+      headers = Object.keys(originalData[0]);
+      createFilters();
+      renderTable(originalData);
+    }
+  });
 }
 
 function createFilters() {
@@ -67,10 +55,10 @@ function createFilters() {
     const select = document.createElement('select');
     select.dataset.column = header;
 
-    const uniqueValues = [...new Set(originalData.map(row => row[header]))];
+    const values = [...new Set(originalData.map(row => row[header]))];
 
     select.innerHTML = `<option value="">Todos (${header})</option>` +
-      uniqueValues.map(v => `<option value="${v}">${v}</option>`).join('');
+      values.map(v => `<option value="${v}">${v}</option>`).join('');
 
     select.onchange = applyFilters;
     container.appendChild(select);
@@ -80,6 +68,8 @@ function createFilters() {
 function applyFilters() {
   let filtered = originalData;
 
+  const search = document.getElementById('search').value.toLowerCase();
+
   document.querySelectorAll('#filters select').forEach(select => {
     const value = select.value;
     const column = select.dataset.column;
@@ -88,6 +78,14 @@ function applyFilters() {
       filtered = filtered.filter(row => row[column] === value);
     }
   });
+
+  if (search) {
+    filtered = filtered.filter(row =>
+      Object.values(row).some(v =>
+        String(v).toLowerCase().includes(search)
+      )
+    );
+  }
 
   renderTable(filtered);
 }
@@ -99,16 +97,14 @@ function renderTable(data) {
   thead.innerHTML = '';
   tbody.innerHTML = '';
 
-  // Cabeçalho
-  const headerRow = document.createElement('tr');
+  const trHead = document.createElement('tr');
   headers.forEach(h => {
     const th = document.createElement('th');
     th.textContent = h;
-    headerRow.appendChild(th);
+    trHead.appendChild(th);
   });
-  thead.appendChild(headerRow);
+  thead.appendChild(trHead);
 
-  // Dados
   data.forEach(row => {
     const tr = document.createElement('tr');
     headers.forEach(h => {
@@ -119,6 +115,8 @@ function renderTable(data) {
     tbody.appendChild(tr);
   });
 }
+
+loadCSV();
 </script>
 
 </body>
