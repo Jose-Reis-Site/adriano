@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Leitor de CSV com Filtros</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f4f4f4; }
+    input, select { margin: 5px; padding: 5px; }
+  </style>
+</head>
+<body>
+
+<h2>Leitor de CSV</h2>
+
+<input type="file" id="fileInput" accept=".csv">
+<br>
+<textarea id="csvText" rows="5" cols="80" placeholder="Ou cole o CSV aqui..."></textarea>
+<br>
+<button onclick="processCSV()">Carregar Dados</button>
+
+<div id="filters"></div>
+
+<table id="dataTable">
+  <thead></thead>
+  <tbody></tbody>
+</table>
+
+<script>
+let originalData = [];
+let headers = [];
+
+function processCSV() {
+  const file = document.getElementById('fileInput').files[0];
+  const text = document.getElementById('csvText').value;
+
+  if (file) {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        loadTable(results.data);
+      }
+    });
+  } else if (text) {
+    const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+    loadTable(results.data);
+  }
+}
+
+function loadTable(data) {
+  originalData = data;
+  headers = Object.keys(data[0]);
+
+  createFilters();
+  renderTable(data);
+}
+
+function createFilters() {
+  const container = document.getElementById('filters');
+  container.innerHTML = "<h3>Filtros</h3>";
+
+  headers.forEach(header => {
+    const select = document.createElement('select');
+    select.dataset.column = header;
+
+    const uniqueValues = [...new Set(originalData.map(row => row[header]))];
+
+    select.innerHTML = `<option value="">Todos (${header})</option>` +
+      uniqueValues.map(v => `<option value="${v}">${v}</option>`).join('');
+
+    select.onchange = applyFilters;
+    container.appendChild(select);
+  });
+}
+
+function applyFilters() {
+  let filtered = originalData;
+
+  document.querySelectorAll('#filters select').forEach(select => {
+    const value = select.value;
+    const column = select.dataset.column;
+
+    if (value) {
+      filtered = filtered.filter(row => row[column] === value);
+    }
+  });
+
+  renderTable(filtered);
+}
+
+function renderTable(data) {
+  const thead = document.querySelector('#dataTable thead');
+  const tbody = document.querySelector('#dataTable tbody');
+
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+
+  // Cabeçalho
+  const headerRow = document.createElement('tr');
+  headers.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  // Dados
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    headers.forEach(h => {
+      const td = document.createElement('td');
+      td.textContent = row[h];
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+</script>
+
+</body>
+</html>
