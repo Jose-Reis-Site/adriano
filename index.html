@@ -2,7 +2,8 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Vendas</title>
+<title>Sistema de Vendas</title>
+
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
@@ -12,7 +13,7 @@ body {
   display: flex;
 }
 
-/* LADO ESQUERDO */
+/* LADO PRINCIPAL */
 #main {
   flex: 1;
   padding: 20px;
@@ -24,10 +25,6 @@ body {
   background: #1f2937;
   color: white;
   padding: 15px;
-}
-
-#cart h3 {
-  margin-top: 0;
 }
 
 #cart ul {
@@ -75,16 +72,8 @@ button {
   border-radius: 5px;
 }
 
-.btn-add {
-  background: #16a34a;
-  color: white;
-}
-
-.btn-send {
-  background: #22c55e;
-  width: 100%;
-  margin-top: 10px;
-}
+.btn-add { background: #16a34a; color: white; }
+.btn-send { background: #22c55e; width: 100%; margin-top: 10px; }
 
 /* MODAL */
 .modal {
@@ -102,6 +91,12 @@ button {
   width: 350px;
   border-radius: 10px;
 }
+
+/* RECIBO */
+#receipt {
+  display: none;
+  padding: 20px;
+}
 </style>
 </head>
 
@@ -117,13 +112,15 @@ button {
     <thead></thead>
     <tbody></tbody>
   </table>
+
+  <div id="receipt"></div>
 </div>
 
 <div id="cart">
   <h3>🛒 Carrinho</h3>
   <ul id="cartItems"></ul>
   <p>Total: R$ <span id="total">0</span></p>
-  <button class="btn-send" onclick="sendWhatsApp()">Finalizar</button>
+  <button class="btn-send" onclick="finalizarPedido()">Finalizar Pedido</button>
 </div>
 
 <!-- MODAL -->
@@ -150,6 +147,7 @@ let headers = [];
 let selectedProduct = null;
 let cart = [];
 
+/* CARREGAR CSV */
 function loadCSV() {
   Papa.parse(CSV_URL, {
     download: true,
@@ -164,6 +162,7 @@ function loadCSV() {
   });
 }
 
+/* FILTROS */
 function createFilters() {
   const container = document.getElementById('filters');
   container.innerHTML = "";
@@ -182,6 +181,7 @@ function createFilters() {
   });
 }
 
+/* APLICAR FILTROS */
 function applyFilters() {
   const search = document.getElementById('search').value.toLowerCase();
 
@@ -204,6 +204,7 @@ function applyFilters() {
   renderTable(filtered);
 }
 
+/* RENDER TABELA */
 function renderTable(rows) {
   const thead = document.querySelector('#table thead');
   const tbody = document.querySelector('#table tbody');
@@ -229,6 +230,7 @@ function renderTable(rows) {
   });
 }
 
+/* MODAL */
 function openModal(product) {
   selectedProduct = product;
 
@@ -250,12 +252,19 @@ function closeModal() {
   document.getElementById('modal').style.display = "none";
 }
 
+/* ADICIONAR AO CARRINHO */
 function addToCart() {
   const qty = parseInt(document.getElementById('qty').value);
-  const price = parseFloat(selectedProduct["preço"] || selectedProduct["Preco"] || 0);
+
+  const price = parseFloat(
+    selectedProduct["Preço de Lista"] ||
+    selectedProduct["preço"] ||
+    selectedProduct["Preco"] || 0
+  );
 
   cart.push({
-    ...selectedProduct,
+    nome: selectedProduct["produto"] || selectedProduct["Produto"],
+    preco: price,
     qty: qty,
     total: qty * price
   });
@@ -264,6 +273,7 @@ function addToCart() {
   closeModal();
 }
 
+/* ATUALIZAR CARRINHO */
 function updateCart() {
   const ul = document.getElementById('cartItems');
   ul.innerHTML = "";
@@ -274,26 +284,59 @@ function updateCart() {
     total += item.total;
 
     const li = document.createElement('li');
-    li.textContent = `${item.produto || "Produto"} x${item.qty} - R$ ${item.total}`;
+    li.textContent = `${item.nome} | R$ ${item.preco} x ${item.qty} = R$ ${item.total.toFixed(2)}`;
     ul.appendChild(li);
   });
 
   document.getElementById('total').textContent = total.toFixed(2);
 }
 
-function sendWhatsApp() {
-  let msg = "Pedido:%0A";
+/* FINALIZAR PEDIDO */
+function finalizarPedido() {
+  let total = 0;
+
+  let html = `
+    <h2>Pedido</h2>
+    <table border="1" cellpadding="8" cellspacing="0">
+      <tr>
+        <th>Produto</th>
+        <th>Preço</th>
+        <th>Qtd</th>
+        <th>Total</th>
+      </tr>
+  `;
 
   cart.forEach(item => {
-    msg += `- ${item.produto} x${item.qty} (R$ ${item.total})%0A`;
+    total += item.total;
+
+    html += `
+      <tr>
+        <td>${item.nome}</td>
+        <td>R$ ${item.preco.toFixed(2)}</td>
+        <td>${item.qty}</td>
+        <td>R$ ${item.total.toFixed(2)}</td>
+      </tr>
+    `;
   });
 
-  msg += `%0ATotal: R$ ${document.getElementById('total').textContent}`;
+  html += `
+      <tr>
+        <td colspan="3"><b>Total</b></td>
+        <td><b>R$ ${total.toFixed(2)}</b></td>
+      </tr>
+    </table>
+    <br>
+    <button onclick="window.print()">Imprimir / Salvar PDF</button>
+  `;
 
-  const phone = "5599999999999";
-  window.open(`https://wa.me/${phone}?text=${msg}`);
+  const receipt = document.getElementById('receipt');
+  receipt.innerHTML = html;
+  receipt.style.display = "block";
+
+  window.scrollTo(0, document.body.scrollHeight);
 }
 
+/* INICIAR */
 loadCSV();
 </script>
 
