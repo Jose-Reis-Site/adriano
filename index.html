@@ -2,32 +2,88 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Venda de Produtos</title>
+<title>Vendas</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-body { font-family: Arial; padding: 20px; }
+body {
+  font-family: Arial;
+  margin: 0;
+  display: flex;
+}
 
+/* LADO ESQUERDO */
+#main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* CARRINHO */
+#cart {
+  width: 300px;
+  background: #1f2937;
+  color: white;
+  padding: 15px;
+}
+
+#cart h3 {
+  margin-top: 0;
+}
+
+#cart ul {
+  list-style: none;
+  padding: 0;
+}
+
+#cart li {
+  margin-bottom: 8px;
+}
+
+/* TABELA */
 table {
   border-collapse: collapse;
   width: 100%;
 }
 
-th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
+th {
+  background: #2563eb;
+  color: white;
+  padding: 10px;
 }
 
-th { background: #eee; }
+td {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
 
 tr:hover {
-  background: #f5f5f5;
+  background: #e0f2fe;
   cursor: pointer;
 }
 
+/* FILTROS */
 input, select {
+  padding: 6px;
   margin: 5px;
-  padding: 5px;
+}
+
+/* BOTÕES */
+button {
+  padding: 6px 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.btn-add {
+  background: #16a34a;
+  color: white;
+}
+
+.btn-send {
+  background: #22c55e;
+  width: 100%;
+  margin-top: 10px;
 }
 
 /* MODAL */
@@ -42,41 +98,46 @@ input, select {
 .modal-content {
   background: white;
   padding: 20px;
-  margin: 10% auto;
-  width: 300px;
+  margin: 5% auto;
+  width: 350px;
   border-radius: 10px;
-}
-
-button {
-  padding: 6px 10px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Produtos</h2>
+<div id="main">
+  <h2>Produtos</h2>
 
-<input type="text" id="search" placeholder="Buscar..." onkeyup="applyFilters()">
+  <input type="text" id="search" placeholder="Buscar..." onkeyup="applyFilters()">
+  <div id="filters"></div>
 
-<div id="filters"></div>
+  <table id="table">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
 
-<table id="table">
-  <thead></thead>
-  <tbody></tbody>
-</table>
+<div id="cart">
+  <h3>🛒 Carrinho</h3>
+  <ul id="cartItems"></ul>
+  <p>Total: R$ <span id="total">0</span></p>
+  <button class="btn-send" onclick="sendWhatsApp()">Finalizar</button>
+</div>
 
 <!-- MODAL -->
 <div id="modal" class="modal">
   <div class="modal-content">
-    <h3 id="productName"></h3>
-    <p>Preço: R$ <span id="productPrice"></span></p>
+    <h3 id="modalTitle"></h3>
+    <div id="modalDetails"></div>
 
-    <label>Quantidade:</label>
+    <br>
+    Quantidade:
     <input type="number" id="qty" value="1" min="1">
 
     <br><br>
-    <button onclick="confirmSale()">Confirmar Venda</button>
+    <button class="btn-add" onclick="addToCart()">Adicionar ao Carrinho</button>
     <button onclick="closeModal()">Cancelar</button>
   </div>
 </div>
@@ -87,6 +148,7 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQKdjpPXyQqrnfi
 let data = [];
 let headers = [];
 let selectedProduct = null;
+let cart = [];
 
 function loadCSV() {
   Papa.parse(CSV_URL, {
@@ -107,14 +169,12 @@ function createFilters() {
   container.innerHTML = "";
 
   headers.forEach(header => {
-    if (header.toLowerCase().includes("preço")) return;
-
     const select = document.createElement('select');
     select.dataset.column = header;
 
     const values = [...new Set(data.map(r => r[header]))];
 
-    select.innerHTML = `<option value="">Todos (${header})</option>` +
+    select.innerHTML = `<option value="">${header}</option>` +
       values.map(v => `<option>${v}</option>`).join('');
 
     select.onchange = applyFilters;
@@ -152,14 +212,11 @@ function renderTable(rows) {
   tbody.innerHTML = "";
 
   const trHead = document.createElement('tr');
-  headers.forEach(h => {
-    trHead.innerHTML += `<th>${h}</th>`;
-  });
+  headers.forEach(h => trHead.innerHTML += `<th>${h}</th>`);
   thead.appendChild(trHead);
 
   rows.forEach(row => {
     const tr = document.createElement('tr');
-
     tr.onclick = () => openModal(row);
 
     headers.forEach(h => {
@@ -175,12 +232,15 @@ function renderTable(rows) {
 function openModal(product) {
   selectedProduct = product;
 
-  document.getElementById('productName').textContent =
+  document.getElementById('modalTitle').textContent =
     product["produto"] || product["Produto"];
 
-  document.getElementById('productPrice').textContent =
-    product["preço"] || product["Preco"];
+  let details = "";
+  Object.keys(product).forEach(k => {
+    details += `<b>${k}:</b> ${product[k]}<br>`;
+  });
 
+  document.getElementById('modalDetails').innerHTML = details;
   document.getElementById('qty').value = 1;
 
   document.getElementById('modal').style.display = "block";
@@ -190,24 +250,48 @@ function closeModal() {
   document.getElementById('modal').style.display = "none";
 }
 
-function confirmSale() {
-  const qty = document.getElementById('qty').value;
-  const name = selectedProduct["produto"] || "Produto";
-  const price = selectedProduct["preço"] || 0;
+function addToCart() {
+  const qty = parseInt(document.getElementById('qty').value);
+  const price = parseFloat(selectedProduct["preço"] || selectedProduct["Preco"] || 0);
 
-  const total = qty * price;
+  cart.push({
+    ...selectedProduct,
+    qty: qty,
+    total: qty * price
+  });
 
-  const msg =
-    `Pedido:%0A` +
-    `${name}%0A` +
-    `Qtd: ${qty}%0A` +
-    `Total: R$ ${total}`;
+  updateCart();
+  closeModal();
+}
+
+function updateCart() {
+  const ul = document.getElementById('cartItems');
+  ul.innerHTML = "";
+
+  let total = 0;
+
+  cart.forEach(item => {
+    total += item.total;
+
+    const li = document.createElement('li');
+    li.textContent = `${item.produto || "Produto"} x${item.qty} - R$ ${item.total}`;
+    ul.appendChild(li);
+  });
+
+  document.getElementById('total').textContent = total.toFixed(2);
+}
+
+function sendWhatsApp() {
+  let msg = "Pedido:%0A";
+
+  cart.forEach(item => {
+    msg += `- ${item.produto} x${item.qty} (R$ ${item.total})%0A`;
+  });
+
+  msg += `%0ATotal: R$ ${document.getElementById('total').textContent}`;
 
   const phone = "5599999999999";
-
   window.open(`https://wa.me/${phone}?text=${msg}`);
-
-  closeModal();
 }
 
 loadCSV();
