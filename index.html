@@ -13,7 +13,7 @@ body {
   display: flex;
 }
 
-/* LADO PRINCIPAL */
+/* MAIN */
 #main {
   flex: 1;
   padding: 20px;
@@ -25,15 +25,6 @@ body {
   background: #1f2937;
   color: white;
   padding: 15px;
-}
-
-#cart ul {
-  list-style: none;
-  padding: 0;
-}
-
-#cart li {
-  margin-bottom: 8px;
 }
 
 /* TABELA */
@@ -58,7 +49,7 @@ tr:hover {
   cursor: pointer;
 }
 
-/* FILTROS */
+/* INPUTS */
 input, select {
   padding: 6px;
   margin: 5px;
@@ -68,12 +59,13 @@ input, select {
 button {
   padding: 6px 10px;
   border: none;
-  cursor: pointer;
   border-radius: 5px;
+  cursor: pointer;
 }
 
 .btn-add { background: #16a34a; color: white; }
-.btn-send { background: #22c55e; width: 100%; margin-top: 10px; }
+.btn-remove { background: #dc2626; color: white; }
+.btn-final { background: #22c55e; width: 100%; margin-top: 10px; }
 
 /* MODAL */
 .modal {
@@ -81,21 +73,16 @@ button {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
 }
 
 .modal-content {
   background: white;
   padding: 20px;
-  margin: 5% auto;
-  width: 350px;
+  margin: 3% auto;
+  width: 90%;
+  max-width: 900px;
   border-radius: 10px;
-}
-
-/* RECIBO */
-#receipt {
-  display: none;
-  padding: 20px;
 }
 </style>
 </head>
@@ -112,18 +99,16 @@ button {
     <thead></thead>
     <tbody></tbody>
   </table>
-
-  <div id="receipt"></div>
 </div>
 
 <div id="cart">
   <h3>🛒 Carrinho</h3>
   <ul id="cartItems"></ul>
   <p>Total: R$ <span id="total">0</span></p>
-  <button class="btn-send" onclick="finalizarPedido()">Finalizar Pedido</button>
+  <button class="btn-final" onclick="openCheckout()">Finalizar Pedido</button>
 </div>
 
-<!-- MODAL -->
+<!-- MODAL PRODUTO -->
 <div id="modal" class="modal">
   <div class="modal-content">
     <h3 id="modalTitle"></h3>
@@ -134,8 +119,33 @@ button {
     <input type="number" id="qty" value="1" min="1">
 
     <br><br>
-    <button class="btn-add" onclick="addToCart()">Adicionar ao Carrinho</button>
+    <button class="btn-add" onclick="addToCart()">Adicionar</button>
     <button onclick="closeModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL CHECKOUT -->
+<div id="checkoutModal" class="modal">
+  <div class="modal-content">
+    <h2>Revisar Pedido</h2>
+
+    <table id="checkoutTable">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Preço</th>
+          <th>Qtd</th>
+          <th>Total</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Total: R$ <span id="checkoutTotal">0</span></h3>
+
+    <button onclick="generatePDF()">Salvar como PDF</button>
+    <button onclick="closeCheckout()">Fechar</button>
   </div>
 </div>
 
@@ -147,7 +157,7 @@ let headers = [];
 let selectedProduct = null;
 let cart = [];
 
-/* CARREGAR CSV */
+/* LOAD CSV */
 function loadCSV() {
   Papa.parse(CSV_URL, {
     download: true,
@@ -162,7 +172,7 @@ function loadCSV() {
   });
 }
 
-/* FILTROS */
+/* FILTERS */
 function createFilters() {
   const container = document.getElementById('filters');
   container.innerHTML = "";
@@ -181,7 +191,6 @@ function createFilters() {
   });
 }
 
-/* APLICAR FILTROS */
 function applyFilters() {
   const search = document.getElementById('search').value.toLowerCase();
 
@@ -204,7 +213,7 @@ function applyFilters() {
   renderTable(filtered);
 }
 
-/* RENDER TABELA */
+/* TABLE */
 function renderTable(rows) {
   const thead = document.querySelector('#table thead');
   const tbody = document.querySelector('#table tbody');
@@ -230,7 +239,7 @@ function renderTable(rows) {
   });
 }
 
-/* MODAL */
+/* MODAL PRODUTO */
 function openModal(product) {
   selectedProduct = product;
 
@@ -243,8 +252,6 @@ function openModal(product) {
   });
 
   document.getElementById('modalDetails').innerHTML = details;
-  document.getElementById('qty').value = 1;
-
   document.getElementById('modal').style.display = "block";
 }
 
@@ -252,7 +259,7 @@ function closeModal() {
   document.getElementById('modal').style.display = "none";
 }
 
-/* ADICIONAR AO CARRINHO */
+/* ADD CART */
 function addToCart() {
   const qty = parseInt(document.getElementById('qty').value);
 
@@ -263,6 +270,7 @@ function addToCart() {
   );
 
   cart.push({
+    ...selectedProduct,
     nome: selectedProduct["produto"] || selectedProduct["Produto"],
     preco: price,
     qty: qty,
@@ -273,7 +281,7 @@ function addToCart() {
   closeModal();
 }
 
-/* ATUALIZAR CARRINHO */
+/* CART */
 function updateCart() {
   const ul = document.getElementById('cartItems');
   ul.innerHTML = "";
@@ -282,61 +290,82 @@ function updateCart() {
 
   cart.forEach(item => {
     total += item.total;
-
     const li = document.createElement('li');
-    li.textContent = `${item.nome} | R$ ${item.preco} x ${item.qty} = R$ ${item.total.toFixed(2)}`;
+    li.textContent = `${item.nome} x${item.qty} = R$ ${item.total.toFixed(2)}`;
     ul.appendChild(li);
   });
 
   document.getElementById('total').textContent = total.toFixed(2);
 }
 
-/* FINALIZAR PEDIDO */
-function finalizarPedido() {
+/* CHECKOUT */
+function openCheckout() {
+  const tbody = document.querySelector('#checkoutTable tbody');
+  tbody.innerHTML = "";
+
   let total = 0;
 
-  let html = `
-    <h2>Pedido</h2>
-    <table border="1" cellpadding="8" cellspacing="0">
-      <tr>
-        <th>Produto</th>
-        <th>Preço</th>
-        <th>Qtd</th>
-        <th>Total</th>
-      </tr>
-  `;
+  cart.forEach((item, index) => {
+    total += item.total;
+
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${item.nome}</td>
+      <td>R$ ${item.preco.toFixed(2)}</td>
+      <td><input type="number" value="${item.qty}" min="1" onchange="updateQty(${index}, this.value)"></td>
+      <td>R$ ${item.total.toFixed(2)}</td>
+      <td><button class="btn-remove" onclick="removeItem(${index})">Remover</button></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('checkoutTotal').textContent = total.toFixed(2);
+  document.getElementById('checkoutModal').style.display = "block";
+}
+
+function closeCheckout() {
+  document.getElementById('checkoutModal').style.display = "none";
+}
+
+function updateQty(index, qty) {
+  cart[index].qty = parseInt(qty);
+  cart[index].total = cart[index].qty * cart[index].preco;
+  openCheckout();
+  updateCart();
+}
+
+function removeItem(index) {
+  cart.splice(index, 1);
+  openCheckout();
+  updateCart();
+}
+
+/* PDF */
+function generatePDF() {
+  let html = "<h2>Pedido</h2><table border='1' cellpadding='8'><tr><th>Produto</th><th>Preço</th><th>Qtd</th><th>Total</th></tr>";
+
+  let total = 0;
 
   cart.forEach(item => {
     total += item.total;
-
-    html += `
-      <tr>
-        <td>${item.nome}</td>
-        <td>R$ ${item.preco.toFixed(2)}</td>
-        <td>${item.qty}</td>
-        <td>R$ ${item.total.toFixed(2)}</td>
-      </tr>
-    `;
+    html += `<tr>
+      <td>${item.nome}</td>
+      <td>R$ ${item.preco.toFixed(2)}</td>
+      <td>${item.qty}</td>
+      <td>R$ ${item.total.toFixed(2)}</td>
+    </tr>`;
   });
 
-  html += `
-      <tr>
-        <td colspan="3"><b>Total</b></td>
-        <td><b>R$ ${total.toFixed(2)}</b></td>
-      </tr>
-    </table>
-    <br>
-    <button onclick="window.print()">Imprimir / Salvar PDF</button>
-  `;
+  html += `<tr><td colspan="3"><b>Total</b></td><td><b>R$ ${total.toFixed(2)}</b></td></tr></table>`;
 
-  const receipt = document.getElementById('receipt');
-  receipt.innerHTML = html;
-  receipt.style.display = "block";
-
-  window.scrollTo(0, document.body.scrollHeight);
+  const win = window.open("", "", "width=800,height=600");
+  win.document.write(html);
+  win.print();
 }
 
-/* INICIAR */
+/* INIT */
 loadCSV();
 </script>
 
