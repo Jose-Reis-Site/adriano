@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistema de Vendas</title>
 
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -16,21 +17,18 @@ body {
 /* MAIN */
 #main {
   flex: 1;
-  padding: 20px;
-}
-
-/* CARRINHO */
-#cart {
-  width: 300px;
-  background: #1f2937;
-  color: white;
   padding: 15px;
 }
 
-/* TABELA */
+/* TABELA RESPONSIVA */
+.table-container {
+  overflow-x: auto;
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
+  min-width: 600px;
 }
 
 th {
@@ -51,13 +49,30 @@ tr:hover {
 
 /* INPUTS */
 input, select {
-  padding: 6px;
-  margin: 5px;
+  padding: 8px;
+  margin: 5px 0;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* CARRINHO */
+#cart {
+  width: 300px;
+  background: #1f2937;
+  color: white;
+  padding: 15px;
+}
+
+#cart ul {
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 /* BOTÕES */
 button {
-  padding: 6px 10px;
+  padding: 10px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -79,10 +94,29 @@ button {
 .modal-content {
   background: white;
   padding: 20px;
-  margin: 3% auto;
+  margin: 5% auto;
   width: 90%;
-  max-width: 900px;
+  max-width: 600px;
   border-radius: 10px;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  body {
+    flex-direction: column;
+  }
+
+  #cart {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+  }
+
+  #main {
+    padding-bottom: 200px;
+  }
 }
 </style>
 </head>
@@ -95,10 +129,12 @@ button {
   <input type="text" id="search" placeholder="Buscar..." onkeyup="applyFilters()">
   <div id="filters"></div>
 
-  <table id="table">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
+  <div class="table-container">
+    <table id="table">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
 <div id="cart">
@@ -129,18 +165,20 @@ button {
   <div class="modal-content">
     <h2>Revisar Pedido</h2>
 
-    <table id="checkoutTable">
-      <thead>
-        <tr>
-          <th>Produto</th>
-          <th>Preço</th>
-          <th>Qtd</th>
-          <th>Total</th>
-          <th>Ação</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-container">
+      <table id="checkoutTable">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço</th>
+            <th>Qtd</th>
+            <th>Total</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
     <h3>Total: R$ <span id="checkoutTotal">0</span></h3>
 
@@ -157,7 +195,7 @@ let headers = [];
 let selectedProduct = null;
 let cart = [];
 
-/* LOAD CSV */
+/* LOAD */
 function loadCSV() {
   Papa.parse(CSV_URL, {
     download: true,
@@ -239,7 +277,7 @@ function renderTable(rows) {
   });
 }
 
-/* MODAL PRODUTO */
+/* MODAL */
 function openModal(product) {
   selectedProduct = product;
 
@@ -259,7 +297,7 @@ function closeModal() {
   document.getElementById('modal').style.display = "none";
 }
 
-/* ADD CART */
+/* CART */
 function addToCart() {
   const qty = parseInt(document.getElementById('qty').value);
 
@@ -281,7 +319,6 @@ function addToCart() {
   closeModal();
 }
 
-/* CART */
 function updateCart() {
   const ul = document.getElementById('cartItems');
   ul.innerHTML = "";
