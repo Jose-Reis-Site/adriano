@@ -8,54 +8,22 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-body {
-  font-family: Arial;
-  margin: 0;
-  display: flex;
-}
+body { font-family: Arial; margin: 0; display: flex; }
 
-/* MAIN */
-#main {
-  flex: 1;
-  padding: 15px;
-}
+#main { flex: 1; padding: 15px; }
 
-/* TABELA RESPONSIVA */
-.table-container {
-  overflow-x: auto;
-}
+.table-container { overflow-x: auto; }
 
-table {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 600px;
-}
+table { border-collapse: collapse; width: 100%; min-width: 600px; }
 
-th {
-  background: #2563eb;
-  color: white;
-  padding: 10px;
-}
+th { background: #2563eb; color: white; padding: 10px; }
 
-td {
-  padding: 8px;
-  border: 1px solid #ddd;
-}
+td { padding: 8px; border: 1px solid #ddd; }
 
-tr:hover {
-  background: #e0f2fe;
-  cursor: pointer;
-}
+tr:hover { background: #e0f2fe; cursor: pointer; }
 
-/* INPUTS */
-input, select {
-  padding: 8px;
-  margin: 5px 0;
-  width: 100%;
-  max-width: 300px;
-}
+input, select { padding: 8px; margin: 5px 0; width: 100%; max-width: 300px; }
 
-/* CARRINHO */
 #cart {
   width: 300px;
   background: #1f2937;
@@ -63,14 +31,8 @@ input, select {
   padding: 15px;
 }
 
-#cart ul {
-  list-style: none;
-  padding: 0;
-  max-height: 200px;
-  overflow-y: auto;
-}
+#cart ul { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; }
 
-/* BOTÕES */
 button {
   padding: 10px;
   border: none;
@@ -82,7 +44,6 @@ button {
 .btn-remove { background: #dc2626; color: white; }
 .btn-final { background: #22c55e; width: 100%; margin-top: 10px; }
 
-/* MODAL */
 .modal {
   display: none;
   position: fixed;
@@ -100,23 +61,15 @@ button {
   border-radius: 10px;
 }
 
-/* MOBILE */
 @media (max-width: 768px) {
-  body {
-    flex-direction: column;
-  }
-
+  body { flex-direction: column; }
   #cart {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    z-index: 1000;
   }
-
-  #main {
-    padding-bottom: 200px;
-  }
+  #main { padding-bottom: 200px; }
 }
 </style>
 </head>
@@ -160,7 +113,7 @@ button {
   </div>
 </div>
 
-<!-- MODAL CHECKOUT -->
+<!-- CHECKOUT -->
 <div id="checkoutModal" class="modal">
   <div class="modal-content">
     <h2>Revisar Pedido</h2>
@@ -195,7 +148,19 @@ let headers = [];
 let selectedProduct = null;
 let cart = [];
 
-/* LOAD */
+/* 🔹 FUNÇÃO PARA PEGAR NOME CORRETO */
+function getProductName(prod) {
+  return (
+    prod["Nome do Produto"] ||
+    prod["Produto"] ||
+    prod["produto"] ||
+    prod["Descrição"] ||
+    prod["descricao"] ||
+    "Produto sem nome"
+  );
+}
+
+/* LOAD CSV */
 function loadCSV() {
   Papa.parse(CSV_URL, {
     download: true,
@@ -210,7 +175,7 @@ function loadCSV() {
   });
 }
 
-/* FILTERS */
+/* FILTROS */
 function createFilters() {
   const container = document.getElementById('filters');
   container.innerHTML = "";
@@ -251,7 +216,7 @@ function applyFilters() {
   renderTable(filtered);
 }
 
-/* TABLE */
+/* TABELA */
 function renderTable(rows) {
   const thead = document.querySelector('#table thead');
   const tbody = document.querySelector('#table tbody');
@@ -281,8 +246,7 @@ function renderTable(rows) {
 function openModal(product) {
   selectedProduct = product;
 
-  document.getElementById('modalTitle').textContent =
-    product["produto"] || product["Produto"];
+  document.getElementById('modalTitle').textContent = getProductName(product);
 
   let details = "";
   Object.keys(product).forEach(k => {
@@ -297,7 +261,7 @@ function closeModal() {
   document.getElementById('modal').style.display = "none";
 }
 
-/* CART */
+/* CARRINHO */
 function addToCart() {
   const qty = parseInt(document.getElementById('qty').value);
 
@@ -309,7 +273,7 @@ function addToCart() {
 
   cart.push({
     ...selectedProduct,
-    nome: selectedProduct["produto"] || selectedProduct["Produto"],
+    nome: getProductName(selectedProduct),
     preco: price,
     qty: qty,
     total: qty * price
