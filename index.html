@@ -41,6 +41,16 @@
         linear-gradient(135deg, #f8fffb 0%, var(--bg) 48%, #e2f4e8 100%);
     }
 
+    body.login-active {
+      display: grid;
+      place-items: center;
+    }
+
+    body.login-active .page,
+    body.login-active .cart-modal {
+      display: none;
+    }
+
     h1 {
       margin: 0 0 10px;
       color: var(--green-900);
@@ -90,6 +100,63 @@
       border: 1px dashed var(--green-600);
       border-radius: 8px;
       cursor: pointer;
+    }
+
+    .login-screen {
+      width: min(420px, calc(100vw - 28px));
+      display: none;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(216, 234, 223, 0.9);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    body.login-active .login-screen {
+      display: block;
+    }
+
+    .login-screen h1 {
+      margin-bottom: 8px;
+      font-size: 26px;
+    }
+
+    .login-form {
+      display: grid;
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .login-form label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .login-form input {
+      min-height: 44px;
+      padding: 10px 12px;
+      color: var(--text);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+      outline: none;
+    }
+
+    .login-form input:focus {
+      border-color: var(--green-600);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.14);
+    }
+
+    .login-error {
+      min-height: 18px;
+      color: #dc2626;
+      font-size: 13px;
+      font-weight: 800;
     }
 
     .file-input::file-selector-button {
@@ -156,6 +223,155 @@
     .execute-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 14px 28px rgba(6, 95, 70, 0.22);
+    }
+
+    .order-card {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .order-card label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .order-card input {
+      min-height: 42px;
+      padding: 9px 10px;
+      color: var(--text);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+      outline: none;
+    }
+
+    .cart-summary {
+      color: var(--green-900);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .secondary-btn,
+    .danger-btn {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--green-700);
+      color: #ffffff;
+      background: var(--green-700);
+      box-shadow: 0 8px 18px rgba(6, 95, 70, 0.14);
+    }
+
+    .danger-btn {
+      border: 1px solid #dc2626;
+      color: #dc2626;
+      background: #fff5f5;
+    }
+
+    .secondary-btn:hover,
+    .danger-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .select-cart-checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green-700);
+      cursor: pointer;
+    }
+
+    .cart-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(18, 49, 42, 0.54);
+    }
+
+    .cart-modal.active {
+      display: flex;
+    }
+
+    .cart-modal-content {
+      width: min(1180px, 100%);
+      max-height: min(86vh, 820px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 26px 70px rgba(6, 78, 59, 0.28);
+    }
+
+    .cart-modal-header,
+    .cart-modal-footer {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .cart-modal-footer {
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .cart-modal-title {
+      margin: 0;
+      color: var(--green-900);
+      font-size: 20px;
+    }
+
+    .cart-modal-body {
+      overflow: auto;
+      padding: 0;
+    }
+
+    .cart-table {
+      min-width: 1040px;
+      border-collapse: collapse !important;
+    }
+
+    .cart-table th,
+    .cart-table td {
+      padding: 10px;
+      border-bottom: 1px solid #edf6ef;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    .cart-table th {
+      position: sticky;
+      top: 0;
+      color: #ffffff;
+      background: var(--green-800);
+      z-index: 1;
+    }
+
+    .empty-cart {
+      padding: 28px;
+      color: var(--muted);
+      font-weight: 700;
+      text-align: center;
     }
 
     .config-grid input:focus,
@@ -353,13 +569,33 @@
         text-align: center;
       }
 
+      .order-card {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-summary {
+        white-space: normal;
+      }
+
       .card {
         padding: 16px;
       }
     }
   </style>
 </head>
-<body>
+<body class="login-active">
+
+  <div class="login-screen" id="loginScreen">
+    <h1>Acesso ao Dashboard</h1>
+    <p class="info">Digite CPF e senha para acessar a lista de preços.</p>
+
+    <form class="login-form" id="loginForm">
+      <label>CPF <input type="text" id="loginCpf" inputmode="numeric" autocomplete="username" required /></label>
+      <label>Senha <input type="password" id="loginSenha" autocomplete="current-password" required /></label>
+      <div class="login-error" id="loginError" aria-live="polite"></div>
+      <button class="execute-btn" type="submit">Entrar</button>
+    </form>
+  </div>
 
   <div class="page">
     <div class="card hero-card">
@@ -388,6 +624,12 @@
 
     <div id="tabs" class="tabs"></div>
 
+    <div class="card order-card">
+      <label>Cliente <input type="text" id="clientePedido" value="Cliente TAL" /></label>
+      <span class="cart-summary" id="cartSummary">0 itens no pedido</span>
+      <button class="secondary-btn" type="button" id="openCart">Ver pedido</button>
+    </div>
+
     <div class="card standard-data-card" id="dadosPadraoCard">
       <div class="standard-data-grid">
         <label>Desconto <input class="decimal-input" type="text" inputmode="decimal" value="50,00" /></label>
@@ -399,18 +641,66 @@
     </div>
   </div>
 
+  <div class="cart-modal" id="cartModal" aria-hidden="true">
+    <div class="cart-modal-content" role="dialog" aria-modal="true" aria-labelledby="cartModalTitle">
+      <div class="cart-modal-header">
+        <h2 class="cart-modal-title" id="cartModalTitle">Pedido - Cliente TAL</h2>
+        <button class="secondary-btn" type="button" id="closeCart">Fechar</button>
+      </div>
+      <div class="cart-modal-body" id="cartModalBody"></div>
+      <div class="cart-modal-footer">
+        <button class="danger-btn" type="button" id="clearCart">Limpar pedido</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIEJGuI3yYLuWoeuAiUcnYSNZZ-GsDmqMXQ6NGuQXgvmblKPuXPTmoStsiiPRmDieeJh6YRcuSxX2j/pub?gid=2077995566&single=true&output=csv';
+    const LOGIN_CPF_TESTE = '00000000000';
+    const LOGIN_SENHA_TESTE = '1234';
+    const COLUNAS_PEDIDO = [
+      'Cód. do Produto',
+      'Nome do Produto',
+      'Embalagem',
+      'Preço de Lista',
+      'Vencimento',
+      'Preço em Dólar FOB',
+      'Preço em Reais FOB',
+      'Preço em Reais CIF'
+    ];
 
     let dadosOriginais = [];
     let tabela = null;
+    let carrinho = [];
 
     criarAbas([]);
-    carregarCsvOnline();
+
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const cpf = document.getElementById('loginCpf').value.replace(/\D/g, '');
+      const senha = document.getElementById('loginSenha').value;
+      const erro = document.getElementById('loginError');
+
+      if (cpf === LOGIN_CPF_TESTE && senha === LOGIN_SENHA_TESTE) {
+        erro.textContent = '';
+        document.body.classList.remove('login-active');
+
+        if (!dadosOriginais.length) {
+          carregarCsvOnline();
+        }
+
+        return;
+      }
+
+      erro.textContent = 'CPF ou senha invalidos.';
+      document.getElementById('loginSenha').value = '';
+      document.getElementById('loginSenha').focus();
+    });
 
     document.querySelectorAll('.currency-input').forEach(input => {
       input.addEventListener('blur', () => {
@@ -438,6 +728,15 @@
     });
 
     document.getElementById('executeTransform').addEventListener('click', recalcularTabelaAtual);
+    document.getElementById('openCart').addEventListener('click', abrirCarrinho);
+    document.getElementById('closeCart').addEventListener('click', fecharCarrinho);
+    document.getElementById('clearCart').addEventListener('click', limparCarrinho);
+    document.getElementById('clientePedido').addEventListener('input', atualizarTituloCarrinho);
+    document.getElementById('cartModal').addEventListener('click', event => {
+      if (event.target.id === 'cartModal') {
+        fecharCarrinho();
+      }
+    });
 
     document.getElementById('csvFile').addEventListener('change', function (event) {
       const file = event.target.files[0];
@@ -641,10 +940,133 @@
 
       tabela.rows().every(function() {
         const row = this.data();
-        this.data(recalcularLinha(row));
+        const rowRecalculada = recalcularLinha(row);
+        this.data(rowRecalculada);
+        atualizarItemCarrinho(rowRecalculada);
       });
 
       tabela.draw(false);
+    }
+
+    function montarItemPedido(row) {
+      const item = COLUNAS_PEDIDO.reduce((pedido, coluna) => {
+        pedido[coluna] = row[coluna] !== undefined ? row[coluna] : '';
+        return pedido;
+      }, {});
+
+      item.__cartKey = gerarChaveProduto(row);
+      return item;
+    }
+
+    function gerarChaveProduto(row) {
+      return [
+        row['Lista de Preços'] || '',
+        row['Cód. do Produto'] || '',
+        row['Nome do Produto'] || '',
+        row['Embalagem'] || '',
+        row['Preço de Lista'] || ''
+      ].join('|');
+    }
+
+    function itemEstaNoCarrinho(row) {
+      const chave = gerarChaveProduto(row);
+      return carrinho.some(item => item.__cartKey === chave);
+    }
+
+    function adicionarAoCarrinho(row) {
+      if (!itemEstaNoCarrinho(row)) {
+        carrinho.push(montarItemPedido(row));
+      }
+      atualizarResumoCarrinho();
+    }
+
+    function removerDoCarrinhoPorLinha(row) {
+      const chave = gerarChaveProduto(row);
+      carrinho = carrinho.filter(item => item.__cartKey !== chave);
+      atualizarResumoCarrinho();
+    }
+
+    function atualizarItemCarrinho(row) {
+      const chave = gerarChaveProduto(row);
+      const index = carrinho.findIndex(item => item.__cartKey === chave);
+
+      if (index >= 0) {
+        carrinho[index] = montarItemPedido(row);
+      }
+    }
+
+    function removerDoCarrinho(index) {
+      carrinho.splice(index, 1);
+      atualizarResumoCarrinho();
+      renderCarrinho();
+
+      if (tabela) {
+        tabela.draw(false);
+      }
+    }
+
+    function limparCarrinho() {
+      carrinho = [];
+      atualizarResumoCarrinho();
+      renderCarrinho();
+
+      if (tabela) {
+        tabela.draw(false);
+      }
+    }
+
+    function atualizarResumoCarrinho() {
+      const total = carrinho.length;
+      document.getElementById('cartSummary').textContent = `${total} ${total === 1 ? 'item' : 'itens'} no pedido`;
+    }
+
+    function atualizarTituloCarrinho() {
+      const cliente = document.getElementById('clientePedido').value.trim() || 'Cliente TAL';
+      document.getElementById('cartModalTitle').textContent = `Pedido - ${cliente}`;
+    }
+
+    function abrirCarrinho() {
+      atualizarTituloCarrinho();
+      renderCarrinho();
+      const modal = document.getElementById('cartModal');
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function fecharCarrinho() {
+      const modal = document.getElementById('cartModal');
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function renderCarrinho() {
+      const body = document.getElementById('cartModalBody');
+
+      if (!carrinho.length) {
+        body.innerHTML = '<div class="empty-cart">Nenhum produto adicionado ao pedido.</div>';
+        return;
+      }
+
+      const header = COLUNAS_PEDIDO.map(coluna => `<th>${escapeHtml(coluna)}</th>`).join('');
+      const rows = carrinho.map((item, index) => `
+        <tr>
+          ${COLUNAS_PEDIDO.map(coluna => `<td>${escapeHtml(item[coluna] || '')}</td>`).join('')}
+          <td><button class="danger-btn remove-cart-item" type="button" data-index="${index}">Remover</button></td>
+        </tr>
+      `).join('');
+
+      body.innerHTML = `
+        <table class="cart-table">
+          <thead>
+            <tr>${header}<th>Ação</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      body.querySelectorAll('.remove-cart-item').forEach(button => {
+        button.addEventListener('click', () => removerDoCarrinho(Number(button.dataset.index)));
+      });
     }
 
     function escapeHtml(value) {
@@ -729,6 +1151,7 @@
       document.getElementById('tabela').closest('.card').style.display = 'block';
 
       const colunas = [
+        'Pedido',
         'Lista de Preços',
         'Cód. do Produto',
         'Nome do Produto',
@@ -755,7 +1178,11 @@
 
       colunas.forEach(col => {
         thead.find('tr:first').append(`<th>${col}</th>`);
-        thead.find('tr:last').append(`<th><input type="text" placeholder="Filtrar ${col}" /></th>`);
+        if (col === 'Pedido') {
+          thead.find('tr:last').append('<th></th>');
+        } else {
+          thead.find('tr:last').append(`<th><input type="text" placeholder="Filtrar ${col}" /></th>`);
+        }
       });
 
       $('#tabela').append(thead);
@@ -763,6 +1190,24 @@
       tabela = $('#tabela').DataTable({
         data: data,
         columns: colunas.map(col => {
+          if (col === 'Pedido') {
+            return {
+              data: null,
+              title: col,
+              orderable: false,
+              searchable: false,
+              defaultContent: '',
+              render: function(value, type, row) {
+                if (type !== 'display') {
+                  return itemEstaNoCarrinho(row) ? '1' : '0';
+                }
+
+                const checked = itemEstaNoCarrinho(row) ? ' checked' : '';
+                return `<input class="select-cart-checkbox" type="checkbox" aria-label="Selecionar produto para pedido"${checked} />`;
+              }
+            };
+          }
+
           if (col === 'Vencimento') {
             return {
               data: col,
@@ -842,7 +1287,9 @@
 
         row['Vencimento'] = formattedValue;
         this.value = formattedValue;
-        tabela.row($(this).closest('tr')).data(recalcularLinha(row)).draw(false);
+        const rowRecalculada = recalcularLinha(row);
+        atualizarItemCarrinho(rowRecalculada);
+        tabela.row($(this).closest('tr')).data(rowRecalculada).draw(false);
       });
 
       $('#tabela tbody').off('change', '.editable-discount').on('change', '.editable-discount', function() {
@@ -851,7 +1298,19 @@
 
         row['Desconto'] = formattedValue;
         this.value = formattedValue;
-        tabela.row($(this).closest('tr')).data(recalcularLinha(row)).draw(false);
+        const rowRecalculada = recalcularLinha(row);
+        atualizarItemCarrinho(rowRecalculada);
+        tabela.row($(this).closest('tr')).data(rowRecalculada).draw(false);
+      });
+
+      $('#tabela tbody').off('change', '.select-cart-checkbox').on('change', '.select-cart-checkbox', function() {
+        const row = tabela.row($(this).closest('tr')).data();
+
+        if (this.checked) {
+          adicionarAoCarrinho(row);
+        } else {
+          removerDoCarrinhoPorLinha(row);
+        }
       });
     }
   </script>
