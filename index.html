@@ -392,6 +392,10 @@
       margin-bottom: 18px;
     }
 
+    .view-tabs {
+      margin-bottom: 18px;
+    }
+
     .tab-btn {
       border: 1px solid var(--line);
       padding: 11px 18px;
@@ -421,6 +425,42 @@
 
     .standard-data-card.active {
       display: block;
+    }
+
+    .export-card {
+      display: none;
+    }
+
+    .export-card.active {
+      display: block;
+    }
+
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .export-grid label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .export-grid input,
+    .export-grid select {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 10px;
+      color: var(--text);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+      outline: none;
     }
 
     .standard-data-grid {
@@ -609,6 +649,11 @@
       <input class="file-input" type="file" id="csvFile" accept=".csv" title="Importar outro CSV" />
     </div>
 
+    <div class="tabs view-tabs" id="viewTabs">
+      <button class="tab-btn active" type="button" data-view="transformada">LISTA DE PREÇOS TRANSFORMADA</button>
+      <button class="tab-btn" type="button" data-view="exportacao">EXPORTACAO REGIAO</button>
+    </div>
+
     <div class="card" id="configCard">
       <div class="config-grid">
         <strong class="config-title">LISTA DE PREÇOS TRANSFORMADA</strong>
@@ -619,6 +664,17 @@
         <label>Correção (%) <input type="number" step="0.01" value="1.8" /></label>
         <label>Antecipação (%) <input type="number" step="0.01" value="1.4" /></label>
         <button class="execute-btn" type="button" id="executeTransform">Executar</button>
+      </div>
+    </div>
+
+    <div class="card export-card" id="exportCard">
+      <div class="export-grid">
+        <strong class="config-title">EXPORTACAO REGIAO</strong>
+        <label>Dólar <input class="currency-input" type="text" id="exportDolar" inputmode="decimal" value="US$ 4,99" data-prefix="US$" /></label>
+        <label>Data <input type="text" id="exportDataHoje" readonly /></label>
+        <label>Lista de Preços <select id="filterExportLista"><option value="">Todas</option></select></label>
+        <label>Centro de Faturamento <select id="filterExportCentro"><option value="">Todos</option></select></label>
+        <label>Embalagem <select id="filterExportEmbalagem"><option value="">Todas</option></select></label>
       </div>
     </div>
 
@@ -672,12 +728,22 @@
       'Preço em Reais FOB',
       'Preço em Reais CIF'
     ];
+    const COLUNAS_EXPORTACAO = [
+      'Lista de Preços',
+      'Nome do Produto',
+      'Embalagem',
+      'Vencimento',
+      'Preço em Dólar FOB',
+      'Preço em Reais FOB'
+    ];
 
     let dadosOriginais = [];
     let tabela = null;
     let carrinho = [];
+    let telaAtual = 'transformada';
 
     criarAbas([]);
+    preencherDataExportacao();
 
     document.getElementById('loginForm').addEventListener('submit', function(event) {
       event.preventDefault();
@@ -732,6 +798,13 @@
     document.getElementById('closeCart').addEventListener('click', fecharCarrinho);
     document.getElementById('clearCart').addEventListener('click', limparCarrinho);
     document.getElementById('clientePedido').addEventListener('input', atualizarTituloCarrinho);
+    document.querySelectorAll('#viewTabs .tab-btn').forEach(button => {
+      button.addEventListener('click', () => alternarTela(button.dataset.view));
+    });
+    document.getElementById('exportDolar').addEventListener('blur', renderExportacaoRegiao);
+    ['filterExportLista', 'filterExportCentro', 'filterExportEmbalagem'].forEach(id => {
+      document.getElementById(id).addEventListener('change', renderExportacaoRegiao);
+    });
     document.getElementById('cartModal').addEventListener('click', event => {
       if (event.target.id === 'cartModal') {
         fecharCarrinho();
@@ -747,7 +820,7 @@
         skipEmptyLines: true,
         complete: function(results) {
           dadosOriginais = prepararDatas(results.data);
-          criarAbas(dadosOriginais);
+          atualizarDadosCarregados();
         }
       });
     });
@@ -759,13 +832,81 @@
         skipEmptyLines: true,
         complete: function(results) {
           dadosOriginais = prepararDatas(results.data);
-          criarAbas(dadosOriginais);
+          atualizarDadosCarregados();
         },
         error: function(error) {
           console.error('Erro ao carregar CSV online:', error);
           alert('Nao foi possivel carregar o CSV online. Voce ainda pode importar um arquivo CSV manualmente.');
         }
       });
+    }
+
+    function atualizarDadosCarregados() {
+      atualizarFiltrosExportacao();
+
+      if (telaAtual === 'exportacao') {
+        renderExportacaoRegiao();
+        return;
+      }
+
+      criarAbas(dadosOriginais);
+    }
+
+    function alternarTela(view) {
+      telaAtual = view;
+
+      document.querySelectorAll('#viewTabs .tab-btn').forEach(button => {
+        button.classList.toggle('active', button.dataset.view === view);
+      });
+
+      const isExportacao = view === 'exportacao';
+      document.getElementById('configCard').style.display = isExportacao ? 'none' : 'block';
+      document.getElementById('exportCard').classList.toggle('active', isExportacao);
+      document.getElementById('tabs').style.display = isExportacao ? 'none' : 'flex';
+      document.querySelector('.order-card').style.display = isExportacao ? 'none' : 'grid';
+      document.getElementById('dadosPadraoCard').classList.remove('active');
+
+      if (isExportacao) {
+        atualizarFiltrosExportacao();
+        renderExportacaoRegiao();
+        return;
+      }
+
+      criarAbas(dadosOriginais);
+    }
+
+    function preencherDataExportacao() {
+      const hoje = new Date();
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const ano = hoje.getFullYear();
+      document.getElementById('exportDataHoje').value = `${dia}/${mes}/${ano}`;
+    }
+
+    function atualizarFiltrosExportacao() {
+      preencherSelectUnico('filterExportLista', dadosOriginais.map(row => row['Lista de Preços']));
+      preencherSelectUnico('filterExportCentro', dadosOriginais.map(row => row['Centro de Faturamento']));
+      preencherSelectUnico('filterExportEmbalagem', dadosOriginais.map(row => row['Embalagem']));
+    }
+
+    function preencherSelectUnico(id, values) {
+      const select = document.getElementById(id);
+      const valorAtual = select.value;
+      const primeiroTexto = select.options[0] ? select.options[0].textContent : 'Todos';
+      const valoresUnicos = Array.from(new Set(values.map(value => String(value || '').trim()).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+      select.innerHTML = `<option value="">${primeiroTexto}</option>`;
+      valoresUnicos.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+
+      if (valoresUnicos.includes(valorAtual)) {
+        select.value = valorAtual;
+      }
     }
 
     function prepararDatas(data) {
@@ -1085,7 +1226,7 @@
       dadosPadraoBtn.className = 'tab-btn active';
       dadosPadraoBtn.textContent = 'Dados Padrao';
       dadosPadraoBtn.onclick = () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#tabs .tab-btn').forEach(b => b.classList.remove('active'));
         dadosPadraoBtn.classList.add('active');
         renderDadosPadrao();
       };
@@ -1124,7 +1265,7 @@
         btn.textContent = `${nomeAba} (${grupos[nomeAba].length})`;
 
         btn.onclick = () => {
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('#tabs .tab-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           renderTabela(grupos[nomeAba]);
         };
@@ -1142,6 +1283,88 @@
         tabela = null;
         $('#tabela').empty();
       }
+    }
+
+    function destruirTabelaAtual() {
+      if (tabela) {
+        tabela.destroy();
+        tabela = null;
+        $('#tabela').empty();
+      }
+    }
+
+    function getDolarExportacao() {
+      const value = parseNumeroBrasileiro(document.getElementById('exportDolar').value);
+      return Number.isNaN(value) ? 0 : value;
+    }
+
+    function montarLinhaExportacao(row) {
+      const precoDolarFobNumero = parseNumeroBrasileiro(row['Preço em Dólar FOB']);
+      const precoReaisFob = Number.isNaN(precoDolarFobNumero)
+        ? ''
+        : formatarDecimalBrasileiro(precoDolarFobNumero * getDolarExportacao());
+
+      return {
+        ...row,
+        'Vencimento': formatarDataBrasileira(row['Vencimento']),
+        'Preço em Reais FOB': precoReaisFob
+      };
+    }
+
+    function filtrarDadosExportacao() {
+      const lista = document.getElementById('filterExportLista').value;
+      const centro = document.getElementById('filterExportCentro').value;
+      const embalagem = document.getElementById('filterExportEmbalagem').value;
+
+      return dadosOriginais.filter(row => {
+        const listaOk = !lista || row['Lista de Preços'] === lista;
+        const centroOk = !centro || row['Centro de Faturamento'] === centro;
+        const embalagemOk = !embalagem || row['Embalagem'] === embalagem;
+        return listaOk && centroOk && embalagemOk;
+      }).map(montarLinhaExportacao);
+    }
+
+    function renderExportacaoRegiao() {
+      if (telaAtual !== 'exportacao') return;
+
+      document.getElementById('dadosPadraoCard').classList.remove('active');
+      document.getElementById('tabela').closest('.card').style.display = 'block';
+      destruirTabelaAtual();
+
+      const data = filtrarDadosExportacao();
+      const thead = $('<thead><tr></tr><tr></tr></thead>');
+
+      COLUNAS_EXPORTACAO.forEach(col => {
+        thead.find('tr:first').append(`<th>${col}</th>`);
+        thead.find('tr:last').append(`<th><input type="text" placeholder="Filtrar ${col}" /></th>`);
+      });
+
+      $('#tabela').append(thead);
+
+      tabela = $('#tabela').DataTable({
+        data: data,
+        columns: COLUNAS_EXPORTACAO.map(col => ({
+          data: function(row) {
+            return row[col] !== undefined ? row[col] : '';
+          },
+          title: col,
+          defaultContent: ''
+        })),
+        orderCellsTop: true,
+        pageLength: 25,
+        scrollX: true,
+        language: {
+          url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/pt-BR.json'
+        }
+      });
+
+      tabela.columns().every(function(index) {
+        $('input', thead.find('tr:eq(1) th').eq(index)).on('keyup change', event => {
+          if (this.search() !== event.target.value) {
+            this.search(event.target.value).draw();
+          }
+        });
+      });
     }
 
     function renderTabela(data) {
