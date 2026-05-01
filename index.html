@@ -1,32 +1,171 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard - Lista de Preços</title>  <!-- DataTables -->  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">  <style>
+  <title>Dashboard - Lista de Preços</title>
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+
+  <style>
+    :root {
+      --bg: #eef7f1;
+      --surface: #ffffff;
+      --surface-soft: #f6fbf7;
+      --green-900: #064e3b;
+      --green-800: #065f46;
+      --green-700: #047857;
+      --green-600: #059669;
+      --green-100: #d1fae5;
+      --green-50: #ecfdf5;
+      --text: #12312a;
+      --muted: #5f756e;
+      --line: #d8eadf;
+      --shadow: 0 18px 45px rgba(6, 78, 59, 0.12);
+    }
+
     * {
       box-sizing: border-box;
     }
 
     body {
-      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
       margin: 0;
-      padding: 16px;
-      background: #f7f7f7;
+      padding: 28px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(16, 185, 129, 0.2), transparent 34%),
+        linear-gradient(135deg, #f8fffb 0%, var(--bg) 48%, #e2f4e8 100%);
     }
 
     h1 {
-      margin-bottom: 8px;
+      margin: 0 0 10px;
+      color: var(--green-900);
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .page {
+      width: min(100%, 1480px);
+      margin: 0 auto;
     }
 
     .card {
       width: 100%;
       overflow: hidden;
-      background: white;
-      padding: 20px;
-      border-radius: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 24px;
+      border: 1px solid rgba(216, 234, 223, 0.9);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      border-top: 5px solid var(--green-600);
+    }
+
+    .info {
+      max-width: 850px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .file-input {
+      width: 100%;
+      max-width: 320px;
+      padding: 10px;
+      color: var(--green-900);
+      background: var(--green-50);
+      border: 1px dashed var(--green-600);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .file-input::file-selector-button {
+      margin-right: 12px;
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--green-700), var(--green-600));
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .config-title {
+      display: flex;
+      align-items: center;
+      min-height: 42px;
+      color: var(--green-900);
+      font-weight: 800;
+    }
+
+    .config-grid label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .config-grid input {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 10px;
+      color: var(--text);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .execute-btn {
+      min-height: 42px;
+      align-self: end;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 18px;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--green-800), var(--green-600));
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(6, 95, 70, 0.18);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .execute-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(6, 95, 70, 0.22);
+    }
+
+    .config-grid input:focus,
+    .standard-data-grid input:focus,
+    table.dataTable thead input:focus,
+    .dataTables_wrapper .dataTables_filter input:focus,
+    .dataTables_wrapper .dataTables_length select:focus {
+      border-color: var(--green-600);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.14);
     }
 
     .tabs {
@@ -34,21 +173,66 @@
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .tab-btn {
-      border: none;
-      padding: 10px 18px;
-      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 11px 18px;
+      border-radius: 999px;
       cursor: pointer;
-      background: #e5e7eb;
-      font-weight: bold;
+      color: var(--green-900);
+      background: rgba(255, 255, 255, 0.82);
+      font-weight: 800;
+      box-shadow: 0 8px 22px rgba(6, 95, 70, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
+    }
+
+    .tab-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(6, 95, 70, 0.14);
     }
 
     .tab-btn.active {
-      background: #111827;
+      border-color: var(--green-700);
+      background: linear-gradient(135deg, var(--green-800), var(--green-600));
       color: white;
+    }
+
+    .standard-data-card {
+      display: none;
+    }
+
+    .standard-data-card.active {
+      display: block;
+    }
+
+    .standard-data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 220px));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .standard-data-grid label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .standard-data-grid input {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 10px;
+      color: var(--text);
+      background: #fff7c2;
+      border: 1px solid #eab308;
+      border-radius: 8px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
 
     #tabela_wrapper {
@@ -58,21 +242,110 @@
 
     table {
       width: 100% !important;
+      border-collapse: separate !important;
+      border-spacing: 0;
+    }
+
+    table.dataTable.no-footer {
+      border-bottom: 1px solid var(--line);
+    }
+
+    table.dataTable thead th {
+      color: #ffffff;
+      background: var(--green-800);
+      border-bottom: 0;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    table.dataTable thead tr:nth-child(2) th {
+      background: var(--green-50);
+      border-bottom: 1px solid var(--line);
     }
 
     table.dataTable thead input {
       width: 100%;
       box-sizing: border-box;
-      padding: 4px;
+      padding: 8px 9px;
+      color: var(--text);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      outline: none;
     }
 
-    .info {
-      margin-bottom: 10px;
-      color: #444;
+    .editable-date,
+    .editable-discount {
+      width: 112px;
+      padding: 7px 8px;
+      color: var(--text);
+      background: #fff7c2;
+      border: 1px solid #eab308;
+      border-radius: 6px;
+      font: inherit;
+      outline: none;
     }
-  @media (max-width: 768px) {
+
+    .editable-date:focus,
+    .editable-discount:focus {
+      background: #fff3a3;
+      border-color: #ca8a04;
+      box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.2);
+    }
+
+    table.dataTable tbody td {
+      border-bottom: 1px solid #edf6ef;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    table.dataTable.stripe tbody tr.odd,
+    table.dataTable.display tbody tr.odd {
+      background-color: #fbfffc;
+    }
+
+    table.dataTable.display tbody tr:hover {
+      background-color: var(--green-50);
+    }
+
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 10px;
+      outline: none;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+      border: 1px solid var(--green-700);
+      border-radius: 8px;
+      color: #ffffff !important;
+      background: var(--green-700) !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+      border: 1px solid var(--green-600);
+      border-radius: 8px;
+      color: #ffffff !important;
+      background: var(--green-600) !important;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 12px;
+      }
+
       h1 {
-        font-size: 22px;
+        font-size: 24px;
+      }
+
+      .hero-card {
+        grid-template-columns: 1fr;
+      }
+
+      .file-input {
+        max-width: 100%;
       }
 
       .tab-btn {
@@ -81,27 +354,90 @@
       }
 
       .card {
-        padding: 14px;
-        border-radius: 10px;
-      }
-
-      body {
-        padding: 10px;
+        padding: 16px;
       }
     }
-  </style></head>
-<body>  <div class="card">
-    <h1>Dashboard - Lista de Preços</h1>
-    <p class="info">
-      Importe o CSV e o sistema criará abas automáticas com base na coluna <strong>Lista de Preços</strong>.
-      Ex.: se encontrar <strong>BRL_Q2_2026</strong>, cria uma aba Q2; se encontrar Q3, cria outra aba.
-    </p><input type="file" id="csvFile" accept=".csv" />
+  </style>
+</head>
+<body>
 
-  </div>  <div id="tabs" class="tabs"></div>  <div class="card">
-    <table id="tabela" class="display" style="width:100%"></table>
-  </div>  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>  <script>
+  <div class="page">
+    <div class="card hero-card">
+      <div>
+        <h1>Dashboard - Lista de Preços</h1>
+        <p class="info">
+          Teste.
+        </p>
+      </div>
+
+      <input class="file-input" type="file" id="csvFile" accept=".csv" title="Importar outro CSV" />
+    </div>
+
+    <div class="card" id="configCard">
+      <div class="config-grid">
+        <strong class="config-title">LISTA DE PREÇOS TRANSFORMADA</strong>
+
+        <label>Dólar <input class="currency-input" type="text" inputmode="decimal" value="US$ 4,99" data-prefix="US$" /></label>
+        <label>ICMS (%) <input type="number" step="0.01" value="4" /></label>
+        <label>Frete <input class="currency-input" type="text" inputmode="decimal" value="R$ 295,00" data-prefix="R$" /></label>
+        <label>Correção (%) <input type="number" step="0.01" value="1.8" /></label>
+        <label>Antecipação (%) <input type="number" step="0.01" value="1.4" /></label>
+        <button class="execute-btn" type="button" id="executeTransform">Executar</button>
+      </div>
+    </div>
+
+    <div id="tabs" class="tabs"></div>
+
+    <div class="card standard-data-card" id="dadosPadraoCard">
+      <div class="standard-data-grid">
+        <label>Desconto <input class="decimal-input" type="text" inputmode="decimal" value="50,00" /></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <table id="tabela" class="display" style="width:100%"></table>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <script>
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIEJGuI3yYLuWoeuAiUcnYSNZZ-GsDmqMXQ6NGuQXgvmblKPuXPTmoStsiiPRmDieeJh6YRcuSxX2j/pub?gid=2077995566&single=true&output=csv';
+
     let dadosOriginais = [];
     let tabela = null;
+
+    criarAbas([]);
+    carregarCsvOnline();
+
+    document.querySelectorAll('.currency-input').forEach(input => {
+      input.addEventListener('blur', () => {
+        const prefix = input.dataset.prefix;
+        const value = input.value
+          .replace(prefix, '')
+          .replace(/\s/g, '')
+          .replace(/\./g, '')
+          .replace(',', '.');
+        const numericValue = Number(value);
+
+        if (Number.isNaN(numericValue)) {
+          input.value = `${prefix} 0,00`;
+          return;
+        }
+
+        input.value = `${prefix} ${numericValue.toFixed(2).replace('.', ',')}`;
+      });
+    });
+
+    document.querySelectorAll('.decimal-input').forEach(input => {
+      input.addEventListener('blur', () => {
+        input.value = formatarDecimalBrasileiro(input.value);
+      });
+    });
+
+    document.getElementById('executeTransform').addEventListener('click', recalcularTabelaAtual);
 
     document.getElementById('csvFile').addEventListener('change', function (event) {
       const file = event.target.files[0];
@@ -111,15 +447,229 @@
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-          dadosOriginais = results.data;
+          dadosOriginais = prepararDatas(results.data);
           criarAbas(dadosOriginais);
         }
       });
     });
 
+    function carregarCsvOnline() {
+      Papa.parse(CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          dadosOriginais = prepararDatas(results.data);
+          criarAbas(dadosOriginais);
+        },
+        error: function(error) {
+          console.error('Erro ao carregar CSV online:', error);
+          alert('Nao foi possivel carregar o CSV online. Voce ainda pode importar um arquivo CSV manualmente.');
+        }
+      });
+    }
+
+    function prepararDatas(data) {
+      return data.map(row => {
+        const vencimentoFinanceiro = formatarDataBrasileira(row['Vencimento Financeiro']);
+        const descontoPadrao = getDescontoPadrao();
+        const preparedRow = {
+          ...row,
+          'Vencimento': vencimentoFinanceiro,
+          'Vencimento Financeiro': vencimentoFinanceiro,
+          'Desconto': descontoPadrao
+        };
+
+        return recalcularLinha(preparedRow);
+      });
+    }
+
+    function formatarDataBrasileira(value) {
+      if (!value) return '';
+
+      const text = String(value).trim();
+      const dateMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+      if (dateMatch) {
+        const firstPart = Number(dateMatch[1]);
+        const secondPart = Number(dateMatch[2]);
+        const isAmericanDate = firstPart <= 12 && secondPart > 12;
+        const dayValue = isAmericanDate ? dateMatch[2] : dateMatch[1];
+        const monthValue = isAmericanDate ? dateMatch[1] : dateMatch[2];
+        const day = dayValue.padStart(2, '0');
+        const month = monthValue.padStart(2, '0');
+        const year = dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3];
+        return `${day}/${month}/${year}`;
+      }
+
+      const isoMatch = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (isoMatch) {
+        return `${isoMatch[3].padStart(2, '0')}/${isoMatch[2].padStart(2, '0')}/${isoMatch[1]}`;
+      }
+
+      const date = new Date(text);
+      if (!Number.isNaN(date.getTime())) {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      return text;
+    }
+
+    function formatarDecimalBrasileiro(value) {
+      const numericValue = parseNumeroBrasileiro(value);
+
+      if (Number.isNaN(numericValue)) {
+        return '0,00';
+      }
+
+      return numericValue.toFixed(2).replace('.', ',');
+    }
+
+    function parseNumeroBrasileiro(value) {
+      if (value === null || value === undefined) return NaN;
+      if (typeof value === 'number') return value;
+
+      const cleanValue = String(value)
+        .replace(/[^\d,.-]/g, '')
+        .trim();
+
+      if (cleanValue.includes(',')) {
+        return Number(cleanValue.replace(/\./g, '').replace(',', '.'));
+      }
+
+      const dotParts = cleanValue.split('.');
+      if (dotParts.length === 2 && dotParts[1].length <= 2) {
+        return Number(cleanValue);
+      }
+
+      return Number(cleanValue.replace(/\./g, ''));
+    }
+
+    function getDescontoPadrao() {
+      const descontoInput = document.querySelector('#dadosPadraoCard .decimal-input');
+      return formatarDecimalBrasileiro(descontoInput ? descontoInput.value : '50,00');
+    }
+
+    function getPercentualConfig(labelText) {
+      const label = Array.from(document.querySelectorAll('#configCard label'))
+        .find(item => item.textContent.includes(labelText));
+      const value = label ? parseNumeroBrasileiro(label.querySelector('input').value) : 0;
+
+      if (Number.isNaN(value)) {
+        return 0;
+      }
+
+      return value / 100;
+    }
+
+    function getValorConfig(labelText) {
+      const label = Array.from(document.querySelectorAll('#configCard label'))
+        .find(item => item.textContent.includes(labelText));
+      const value = label ? parseNumeroBrasileiro(label.querySelector('input').value) : 0;
+
+      if (Number.isNaN(value)) {
+        return 0;
+      }
+
+      return value;
+    }
+
+    function parseDataBrasileira(value) {
+      const formattedValue = formatarDataBrasileira(value);
+      const match = formattedValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+      if (!match) return null;
+
+      return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+    }
+
+    function diferencaDias(dataFinal, dataInicial) {
+      const millisecondsPerDay = 24 * 60 * 60 * 1000;
+      return Math.round((dataFinal - dataInicial) / millisecondsPerDay);
+    }
+
+    function calcularPrecoDolarFob(row) {
+      const vencimento = parseDataBrasileira(row['Vencimento']);
+      const vencimentoFinanceiro = parseDataBrasileira(row['Vencimento Financeiro']);
+      const precoLista = parseNumeroBrasileiro(row['Preço de Lista']);
+      const desconto = parseNumeroBrasileiro(row['Desconto']);
+      const icms = getPercentualConfig('ICMS');
+      const correcao = getPercentualConfig('Correção');
+      const antecipacao = getPercentualConfig('Antecipação');
+
+      if (!vencimento || !vencimentoFinanceiro || Number.isNaN(precoLista) || Number.isNaN(desconto)) {
+        return '';
+      }
+
+      const precoBase = (precoLista - desconto) * (1 + icms);
+      const dias = diferencaDias(vencimento, vencimentoFinanceiro);
+      let precoDolarFob = precoBase;
+
+      if (dias > 0) {
+        precoDolarFob = precoBase * (1 + ((correcao / 30) * dias));
+      } else if (dias < 0) {
+        precoDolarFob = precoBase * (1 - ((antecipacao / 30) * Math.abs(dias)));
+      }
+
+      return formatarDecimalBrasileiro(precoDolarFob);
+    }
+
+    function recalcularLinha(row) {
+      const precoDolarFob = calcularPrecoDolarFob(row);
+      const precoDolarFobNumero = parseNumeroBrasileiro(precoDolarFob);
+      const dolar = getValorConfig('Dólar');
+      const frete = getValorConfig('Frete');
+      const precoReaisFob = Number.isNaN(precoDolarFobNumero)
+        ? NaN
+        : precoDolarFobNumero * dolar;
+
+      row['Preço em Dólar FOB'] = precoDolarFob;
+      row['Preço em Reais FOB'] = Number.isNaN(precoReaisFob)
+        ? ''
+        : formatarDecimalBrasileiro(precoReaisFob);
+      row['Preço em Reais CIF'] = Number.isNaN(precoReaisFob)
+        ? ''
+        : formatarDecimalBrasileiro(precoReaisFob + frete);
+
+      return row;
+    }
+
+    function recalcularTabelaAtual() {
+      if (!tabela) return;
+
+      tabela.rows().every(function() {
+        const row = this.data();
+        this.data(recalcularLinha(row));
+      });
+
+      tabela.draw(false);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
     function criarAbas(data) {
       const tabs = document.getElementById('tabs');
       tabs.innerHTML = '';
+
+      const dadosPadraoBtn = document.createElement('button');
+      dadosPadraoBtn.className = 'tab-btn active';
+      dadosPadraoBtn.textContent = 'Dados Padrao';
+      dadosPadraoBtn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        dadosPadraoBtn.classList.add('active');
+        renderDadosPadrao();
+      };
+
+      tabs.appendChild(dadosPadraoBtn);
+      renderDadosPadrao();
 
       const grupos = {
         'Lista Q2 PR': data.filter(row =>
@@ -158,18 +708,43 @@
         };
 
         tabs.appendChild(btn);
-
-        if (tabs.children.length === 1) {
-          btn.classList.add('active');
-          renderTabela(grupos[nomeAba]);
-        }
       });
+    }
+
+    function renderDadosPadrao() {
+      document.getElementById('dadosPadraoCard').classList.add('active');
+      document.getElementById('tabela').closest('.card').style.display = 'none';
+
+      if (tabela) {
+        tabela.destroy();
+        tabela = null;
+        $('#tabela').empty();
+      }
     }
 
     function renderTabela(data) {
       if (!data.length) return;
 
-      const colunas = Object.keys(data[0]);
+      document.getElementById('dadosPadraoCard').classList.remove('active');
+      document.getElementById('tabela').closest('.card').style.display = 'block';
+
+      const colunas = [
+        'Lista de Preços',
+        'Cód. do Produto',
+        'Nome do Produto',
+        'Embalagem',
+        'Preço de Lista',
+        'Vencimento',
+        'Preço em Dólar FOB',
+        'Preço em Reais FOB',
+        'Preço em Reais CIF',
+        'Vencimento Financeiro',
+        'Desconto',
+        'Entrega de',
+        'Entrega até',
+        'Centro de Faturamento',
+        'Local de Expedição'
+      ];
 
       if (tabela) {
         tabela.destroy();
@@ -187,13 +762,64 @@
 
       tabela = $('#tabela').DataTable({
         data: data,
-        columns: colunas.map(col => ({
-          data: function(row) {
-            return row[col] !== undefined ? row[col] : '';
-          },
-          title: col,
-          defaultContent: ''
-        })),
+        columns: colunas.map(col => {
+          if (col === 'Vencimento') {
+            return {
+              data: col,
+              title: col,
+              defaultContent: '',
+              render: function(value, type) {
+                const formattedValue = formatarDataBrasileira(value);
+
+                if (type !== 'display') {
+                  return formattedValue;
+                }
+
+                return `<input class="editable-date" type="text" inputmode="numeric" value="${escapeHtml(formattedValue)}" />`;
+              }
+            };
+          }
+
+          if (col === 'Desconto') {
+            return {
+              data: col,
+              title: col,
+              defaultContent: '',
+              render: function(value, type) {
+                const formattedValue = formatarDecimalBrasileiro(value);
+
+                if (type !== 'display') {
+                  return formattedValue;
+                }
+
+                return `<input class="editable-discount" type="text" inputmode="decimal" value="${escapeHtml(formattedValue)}" />`;
+              }
+            };
+          }
+
+          if (['Preço em Dólar FOB', 'Preço em Reais FOB', 'Preço em Reais CIF'].includes(col)) {
+            return {
+              data: col,
+              title: col,
+              defaultContent: '',
+              render: function(value) {
+                return value !== undefined ? value : '';
+              }
+            };
+          }
+
+          return {
+            data: function(row) {
+              if (col === 'Vencimento Financeiro') {
+                return formatarDataBrasileira(row[col]);
+              }
+
+              return row[col] !== undefined ? row[col] : '';
+            },
+            title: col,
+            defaultContent: ''
+          };
+        }),
         orderCellsTop: true,
         pageLength: 25,
         scrollX: true,
@@ -203,12 +829,32 @@
       });
 
       tabela.columns().every(function(index) {
-        $('input', thead.find('tr:eq(1) th').eq(index)).on('keyup change', () => {
+        $('input', thead.find('tr:eq(1) th').eq(index)).on('keyup change', event => {
           if (this.search() !== event.target.value) {
             this.search(event.target.value).draw();
           }
         });
       });
+
+      $('#tabela tbody').off('change', '.editable-date').on('change', '.editable-date', function() {
+        const formattedValue = formatarDataBrasileira(this.value);
+        const row = tabela.row($(this).closest('tr')).data();
+
+        row['Vencimento'] = formattedValue;
+        this.value = formattedValue;
+        tabela.row($(this).closest('tr')).data(recalcularLinha(row)).draw(false);
+      });
+
+      $('#tabela tbody').off('change', '.editable-discount').on('change', '.editable-discount', function() {
+        const formattedValue = formatarDecimalBrasileiro(this.value);
+        const row = tabela.row($(this).closest('tr')).data();
+
+        row['Desconto'] = formattedValue;
+        this.value = formattedValue;
+        tabela.row($(this).closest('tr')).data(recalcularLinha(row)).draw(false);
+      });
     }
-  </script></body>
+  </script>
+
+</body>
 </html>
