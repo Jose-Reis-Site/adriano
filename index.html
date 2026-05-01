@@ -334,6 +334,34 @@
       justify-content: flex-end;
     }
 
+    .quote-pdf-options {
+      display: flex;
+      gap: 10px;
+      align-items: end;
+      flex-wrap: wrap;
+      margin-right: auto;
+    }
+
+    .quote-pdf-options label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .quote-pdf-options select {
+      min-height: 38px;
+      min-width: 190px;
+      padding: 8px 10px;
+      color: var(--text);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+      outline: none;
+    }
+
     .cart-modal-title {
       margin: 0;
       color: var(--green-900);
@@ -617,6 +645,12 @@
         white-space: normal;
       }
 
+      .cart-modal-footer,
+      .quote-pdf-options {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
       .card {
         padding: 16px;
       }
@@ -681,9 +715,9 @@
     <div id="tabs" class="tabs"></div>
 
     <div class="card order-card">
-      <label>Cliente <input type="text" id="clientePedido" value="Cliente TAL" /></label>
-      <span class="cart-summary" id="cartSummary">0 itens no pedido</span>
-      <button class="secondary-btn" type="button" id="openCart">Ver pedido</button>
+      <label>Cliente <input type="text" id="clienteCotacao" value="Cliente TAL" /></label>
+      <span class="cart-summary" id="cartSummary">0 itens na cotação</span>
+      <button class="secondary-btn" type="button" id="openCart">Ver cotação</button>
     </div>
 
     <div class="card standard-data-card" id="dadosPadraoCard">
@@ -700,12 +734,21 @@
   <div class="cart-modal" id="cartModal" aria-hidden="true">
     <div class="cart-modal-content" role="dialog" aria-modal="true" aria-labelledby="cartModalTitle">
       <div class="cart-modal-header">
-        <h2 class="cart-modal-title" id="cartModalTitle">Pedido - Cliente TAL</h2>
+        <h2 class="cart-modal-title" id="cartModalTitle">Cotação - Cliente TAL</h2>
         <button class="secondary-btn" type="button" id="closeCart">Fechar</button>
       </div>
       <div class="cart-modal-body" id="cartModalBody"></div>
       <div class="cart-modal-footer">
-        <button class="danger-btn" type="button" id="clearCart">Limpar pedido</button>
+        <div class="quote-pdf-options">
+          <label>Preço no PDF
+            <select id="quotePriceColumn">
+              <option value="Preço em Dólar FOB">Preço em Dólar FOB</option>
+              <option value="Preço em Reais FOB">Preço em Reais FOB</option>
+            </select>
+          </label>
+          <button class="secondary-btn" type="button" id="downloadQuotePdf">Baixar PDF</button>
+        </div>
+        <button class="danger-btn" type="button" id="clearCart">Limpar cotação</button>
       </div>
     </div>
   </div>
@@ -713,13 +756,15 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 
   <script>
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIEJGuI3yYLuWoeuAiUcnYSNZZ-GsDmqMXQ6NGuQXgvmblKPuXPTmoStsiiPRmDieeJh6YRcuSxX2j/pub?gid=2077995566&single=true&output=csv';
     const LOGIN_CPF_TESTE = '00000000000';
     const LOGIN_SENHA_TESTE = '1234';
-    const COLUNAS_PEDIDO = [
-      'Cód. do Produto',
+    const COLUNAS_COTACAO = [
+      'Lista de Preços',
       'Nome do Produto',
       'Embalagem',
       'Preço de Lista',
@@ -797,7 +842,8 @@
     document.getElementById('openCart').addEventListener('click', abrirCarrinho);
     document.getElementById('closeCart').addEventListener('click', fecharCarrinho);
     document.getElementById('clearCart').addEventListener('click', limparCarrinho);
-    document.getElementById('clientePedido').addEventListener('input', atualizarTituloCarrinho);
+    document.getElementById('downloadQuotePdf').addEventListener('click', gerarPdfCotacao);
+    document.getElementById('clienteCotacao').addEventListener('input', atualizarTituloCarrinho);
     document.querySelectorAll('#viewTabs .tab-btn').forEach(button => {
       button.addEventListener('click', () => alternarTela(button.dataset.view));
     });
@@ -1089,10 +1135,10 @@
       tabela.draw(false);
     }
 
-    function montarItemPedido(row) {
-      const item = COLUNAS_PEDIDO.reduce((pedido, coluna) => {
-        pedido[coluna] = row[coluna] !== undefined ? row[coluna] : '';
-        return pedido;
+    function montarItemCotacao(row) {
+      const item = COLUNAS_COTACAO.reduce((cotacao, coluna) => {
+        cotacao[coluna] = row[coluna] !== undefined ? row[coluna] : '';
+        return cotacao;
       }, {});
 
       item.__cartKey = gerarChaveProduto(row);
@@ -1116,7 +1162,7 @@
 
     function adicionarAoCarrinho(row) {
       if (!itemEstaNoCarrinho(row)) {
-        carrinho.push(montarItemPedido(row));
+        carrinho.push(montarItemCotacao(row));
       }
       atualizarResumoCarrinho();
     }
@@ -1132,7 +1178,7 @@
       const index = carrinho.findIndex(item => item.__cartKey === chave);
 
       if (index >= 0) {
-        carrinho[index] = montarItemPedido(row);
+        carrinho[index] = montarItemCotacao(row);
       }
     }
 
@@ -1158,12 +1204,12 @@
 
     function atualizarResumoCarrinho() {
       const total = carrinho.length;
-      document.getElementById('cartSummary').textContent = `${total} ${total === 1 ? 'item' : 'itens'} no pedido`;
+      document.getElementById('cartSummary').textContent = `${total} ${total === 1 ? 'item' : 'itens'} na cotação`;
     }
 
     function atualizarTituloCarrinho() {
-      const cliente = document.getElementById('clientePedido').value.trim() || 'Cliente TAL';
-      document.getElementById('cartModalTitle').textContent = `Pedido - ${cliente}`;
+      const cliente = document.getElementById('clienteCotacao').value.trim() || 'Cliente TAL';
+      document.getElementById('cartModalTitle').textContent = `Cotação - ${cliente}`;
     }
 
     function abrirCarrinho() {
@@ -1184,14 +1230,14 @@
       const body = document.getElementById('cartModalBody');
 
       if (!carrinho.length) {
-        body.innerHTML = '<div class="empty-cart">Nenhum produto adicionado ao pedido.</div>';
+        body.innerHTML = '<div class="empty-cart">Nenhum produto adicionado à cotação.</div>';
         return;
       }
 
-      const header = COLUNAS_PEDIDO.map(coluna => `<th>${escapeHtml(coluna)}</th>`).join('');
+      const header = COLUNAS_COTACAO.map(coluna => `<th>${escapeHtml(coluna)}</th>`).join('');
       const rows = carrinho.map((item, index) => `
         <tr>
-          ${COLUNAS_PEDIDO.map(coluna => `<td>${escapeHtml(item[coluna] || '')}</td>`).join('')}
+          ${COLUNAS_COTACAO.map(coluna => `<td>${escapeHtml(item[coluna] || '')}</td>`).join('')}
           <td><button class="danger-btn remove-cart-item" type="button" data-index="${index}">Remover</button></td>
         </tr>
       `).join('');
@@ -1208,6 +1254,102 @@
       body.querySelectorAll('.remove-cart-item').forEach(button => {
         button.addEventListener('click', () => removerDoCarrinho(Number(button.dataset.index)));
       });
+    }
+
+    function gerarPdfCotacao() {
+      if (!carrinho.length) {
+        alert('Selecione ao menos um produto para gerar a cotação.');
+        return;
+      }
+
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Nao foi possivel carregar a biblioteca de PDF. Verifique sua conexao e tente novamente.');
+        return;
+      }
+
+      const colunaPreco = document.getElementById('quotePriceColumn').value;
+      const cliente = document.getElementById('clienteCotacao').value.trim() || 'Cliente TAL';
+      const hoje = new Date();
+      const dataCotacao = `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const verde = [6, 95, 70];
+      const verdeClaro = [236, 253, 245];
+      const colunasPdf = [
+        'Lista de Preços',
+        'Nome do Produto',
+        'Embalagem',
+        'Preço de Lista',
+        'Vencimento',
+        colunaPreco
+      ];
+      const linhasPdf = carrinho.map(item => colunasPdf.map(coluna => item[coluna] || ''));
+
+      doc.setFillColor(...verde);
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('Agro Girardi', 36, 11);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Cotação Comercial', 36, 18);
+
+      doc.setDrawColor(255, 255, 255);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(12, 5, 16, 16, 1, 1, 'FD');
+      doc.setTextColor(...verde);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.text('LOGO', 17, 14);
+
+      doc.setTextColor(18, 49, 42);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Cliente: ${cliente}`, 12, 36);
+      doc.text('Vendedor: Adriano Girardi', 12, 43);
+      doc.text(`Data: ${dataCotacao}`, 12, 50);
+      doc.text(`Preço escolhido: ${colunaPreco}`, 12, 57);
+
+      doc.autoTable({
+        head: [colunasPdf],
+        body: linhasPdf,
+        startY: 66,
+        theme: 'grid',
+        styles: {
+          font: 'helvetica',
+          fontSize: 7,
+          cellPadding: 1.6,
+          textColor: [18, 49, 42],
+          lineColor: [216, 234, 223],
+          lineWidth: 0.2
+        },
+        headStyles: {
+          fillColor: verde,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: verdeClaro
+        },
+        columnStyles: {
+          0: { cellWidth: 30 },
+          1: { cellWidth: 52 },
+          2: { cellWidth: 28 },
+          3: { cellWidth: 22 },
+          4: { cellWidth: 22 },
+          5: { cellWidth: 24 }
+        },
+        margin: { left: 10, right: 10 }
+      });
+
+      const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 190;
+      doc.setFontSize(9);
+      doc.setTextColor(95, 117, 110);
+      doc.text('Cotação gerada automaticamente pelo sistema Agro Girardi.', 12, Math.min(finalY, 196));
+
+      doc.save('Agro Girardi - Cotacao.pdf');
     }
 
     function escapeHtml(value) {
@@ -1374,7 +1516,7 @@
       document.getElementById('tabela').closest('.card').style.display = 'block';
 
       const colunas = [
-        'Pedido',
+        'Cotação',
         'Lista de Preços',
         'Cód. do Produto',
         'Nome do Produto',
@@ -1401,7 +1543,7 @@
 
       colunas.forEach(col => {
         thead.find('tr:first').append(`<th>${col}</th>`);
-        if (col === 'Pedido') {
+        if (col === 'Cotação') {
           thead.find('tr:last').append('<th></th>');
         } else {
           thead.find('tr:last').append(`<th><input type="text" placeholder="Filtrar ${col}" /></th>`);
@@ -1413,7 +1555,7 @@
       tabela = $('#tabela').DataTable({
         data: data,
         columns: colunas.map(col => {
-          if (col === 'Pedido') {
+          if (col === 'Cotação') {
             return {
               data: null,
               title: col,
@@ -1426,7 +1568,7 @@
                 }
 
                 const checked = itemEstaNoCarrinho(row) ? ' checked' : '';
-                return `<input class="select-cart-checkbox" type="checkbox" aria-label="Selecionar produto para pedido"${checked} />`;
+                return `<input class="select-cart-checkbox" type="checkbox" aria-label="Selecionar produto para cotação"${checked} />`;
               }
             };
           }
