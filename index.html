@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Lista de Preços</title>
 
-  <!-- DataTables -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
@@ -547,6 +546,18 @@
       border-bottom: 1px solid var(--line);
     }
 
+    table.dataTable thead select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px;
+      color: var(--text);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      outline: none;
+      font-size: 12px;
+    }
+
     table.dataTable thead input {
       width: 100%;
       box-sizing: border-box;
@@ -988,6 +999,7 @@
       const blob = await response.blob();
       return lerArquivoComoDataUrl(blob);
     }
+
     function atualizarFiltrosExportacao() {
       preencherSelectUnico('filterExportLista', dadosOriginais.map(row => row['Lista de Preços']));
       preencherSelectUnico('filterExportCentro', dadosOriginais.map(row => row['Centro de Faturamento']));
@@ -1032,7 +1044,13 @@
     function formatarDataBrasileira(value) {
       if (!value) return '';
 
+      if (typeof value === 'number') {
+        const d = serialDateToDate(value);
+        if (d) return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      }
+
       const text = String(value).trim();
+      
       const dateMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
       if (dateMatch) {
         const firstPart = Number(dateMatch[1]);
@@ -1439,30 +1457,30 @@
       tabs.appendChild(dadosPadraoBtn);
       renderDadosPadrao();
 
+      // DEFINIÇÃO DOS GRUPOS SOLICITADOS
       const grupos = {
-        'Lista Q2 PR': data.filter(row =>
-          (row['Lista de Preços'] || '').includes('BRL_Q2_2026') &&
-          (row['Embalagem'] || '').toLowerCase().includes('big bag liner') &&
-          (row['Centro de Faturamento'] || '').includes('PNG II')
-        ),
-
-        'Lista Q3 PR': data.filter(row =>
-          (row['Lista de Preços'] || '').includes('BRL_Q3_2026') &&
-          (row['Embalagem'] || '').toLowerCase().includes('big bag liner') &&
-          (row['Centro de Faturamento'] || '').includes('PNG II')
-        ),
-
-        'Outros': data.filter(row =>
-          !(
-            ((row['Lista de Preços'] || '').includes('BRL_Q2_2026') ||
-             (row['Lista de Preços'] || '').includes('BRL_Q3_2026')) &&
-            (row['Embalagem'] || '').toLowerCase().includes('big bag liner') &&
-            (row['Centro de Faturamento'] || '').includes('PNG II')
-          )
-        )
+        'BRL Q1 PNG': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q1_2026') && (row['Centro de Faturamento'] || '').includes('PNG')),
+        'BRL Q2 PNG': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q2_2026') && (row['Centro de Faturamento'] || '').includes('PNG')),
+        'BRL Q3 PNG': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q3_2026') && (row['Centro de Faturamento'] || '').includes('PNG')),
+        'BRL Q4 PNG': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q4_2026') && (row['Centro de Faturamento'] || '').includes('PNG')),
+        'BRL Q1 UBA': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q1_2026') && (row['Centro de Faturamento'] || '').includes('UBA')),
+        'BRL Q2 UBA': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q2_2026') && (row['Centro de Faturamento'] || '').includes('UBA')),
+        'BRL Q3 UBA': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q3_2026') && (row['Centro de Faturamento'] || '').includes('UBA')),
+        'BRL Q4 UBA': data.filter(row => (row['Lista de Preços'] || '').includes('BRL_Q4_2026') && (row['Centro de Faturamento'] || '').includes('UBA')),
+        
+        // Aba Outros: Inclui tudo que não foi filtrado acima
+        'Outros': data.filter(row => {
+          const lista = row['Lista de Preços'] || '';
+          const centro = row['Centro de Faturamento'] || '';
+          
+          const isQ1toQ4 = lista.includes('BRL_Q1_2026') || lista.includes('BRL_Q2_2026') || lista.includes('BRL_Q3_2026') || lista.includes('BRL_Q4_2026');
+          const isPngOrUba = centro.includes('PNG') || centro.includes('UBA');
+          
+          return !(isQ1toQ4 && isPngOrUba);
+        })
       };
 
-      Object.keys(grupos).forEach((nomeAba, index) => {
+      Object.keys(grupos).forEach((nomeAba) => {
         if (!grupos[nomeAba].length) return;
 
         const btn = document.createElement('button');
@@ -1771,12 +1789,30 @@
 
       const thead = $('<thead><tr></tr><tr></tr></thead>');
 
-      colunas.forEach(col => {
+      colunas.forEach((col) => {
         thead.find('tr:first').append(`<th>${col}</th>`);
+        
         if (col === 'Cotação') {
           thead.find('tr:last').append('<th></th>');
         } else {
-          thead.find('tr:last').append(`<th><input type="text" placeholder="Filtrar ${col}" /></th>`);
+          const valoresUnicosRaw = [...new Set(data.map(item => {
+            let val = item[col];
+            if (['Entrega de', 'Entrega até', 'Vencimento Financeiro'].includes(col)) {
+              return formatarDataBrasileira(val);
+            }
+            return String(val || '').trim();
+          }))];
+
+          const valoresUnicos = valoresUnicosRaw
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+          let options = `<option value="">Todos</option>`;
+          valoresUnicos.forEach(val => {
+            options += `<option value="${escapeHtml(val)}">${escapeHtml(val)}</option>`;
+          });
+
+          thead.find('tr:last').append(`<th><select><option value="">Filtrar...</option>${options}</select></th>`);
         }
       });
 
@@ -1796,7 +1832,6 @@
                 if (type !== 'display') {
                   return itemEstaNoCarrinho(row) ? '1' : '0';
                 }
-
                 const checked = itemEstaNoCarrinho(row) ? ' checked' : '';
                 return `<input class="select-cart-checkbox" type="checkbox" aria-label="Selecionar produto para cotação"${checked} />`;
               }
@@ -1810,11 +1845,7 @@
               defaultContent: '',
               render: function(value, type) {
                 const formattedValue = formatarDataBrasileira(value);
-
-                if (type !== 'display') {
-                  return formattedValue;
-                }
-
+                if (type !== 'display') return formattedValue;
                 return `<input class="editable-date" type="text" inputmode="numeric" value="${escapeHtml(formattedValue)}" />`;
               }
             };
@@ -1827,12 +1858,19 @@
               defaultContent: '',
               render: function(value, type) {
                 const formattedValue = formatarDecimalBrasileiro(value);
-
-                if (type !== 'display') {
-                  return formattedValue;
-                }
-
+                if (type !== 'display') return formattedValue;
                 return `<input class="editable-discount" type="text" inputmode="decimal" value="${escapeHtml(formattedValue)}" />`;
+              }
+            };
+          }
+
+          if (['Entrega de', 'Entrega até', 'Vencimento Financeiro'].includes(col)) {
+            return {
+              data: col,
+              title: col,
+              defaultContent: '',
+              render: function(value) {
+                return formatarDataBrasileira(value);
               }
             };
           }
@@ -1850,10 +1888,6 @@
 
           return {
             data: function(row) {
-              if (col === 'Vencimento Financeiro') {
-                return formatarDataBrasileira(row[col]);
-              }
-
               return row[col] !== undefined ? row[col] : '';
             },
             title: col,
@@ -1869,17 +1903,15 @@
       });
 
       tabela.columns().every(function(index) {
-        $('input', thead.find('tr:eq(1) th').eq(index)).on('keyup change', event => {
-          if (this.search() !== event.target.value) {
-            this.search(event.target.value).draw();
-          }
+        $('select', thead.find('tr:eq(1) th').eq(index)).on('change', function() {
+          const val = $.fn.dataTable.util.escapeRegex($(this).val());
+          tabela.column(index).search(val ? '^' + val + '$' : '', true, false).draw();
         });
       });
 
       $('#tabela tbody').off('change', '.editable-date').on('change', '.editable-date', function() {
         const formattedValue = formatarDataBrasileira(this.value);
         const row = tabela.row($(this).closest('tr')).data();
-
         row['Vencimento'] = formattedValue;
         this.value = formattedValue;
         const rowRecalculada = recalcularLinha(row);
@@ -1890,7 +1922,6 @@
       $('#tabela tbody').off('change', '.editable-discount').on('change', '.editable-discount', function() {
         const formattedValue = formatarDecimalBrasileiro(this.value);
         const row = tabela.row($(this).closest('tr')).data();
-
         row['Desconto'] = formattedValue;
         this.value = formattedValue;
         const rowRecalculada = recalcularLinha(row);
@@ -1900,7 +1931,6 @@
 
       $('#tabela tbody').off('change', '.select-cart-checkbox').on('change', '.select-cart-checkbox', function() {
         const row = tabela.row($(this).closest('tr')).data();
-
         if (this.checked) {
           adicionarAoCarrinho(row);
         } else {
